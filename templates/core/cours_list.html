@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+
+{% block title %}Liste des Cours - Gestion Scolaire{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-book me-2"></i>
+        Liste des Cours
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>Exporter
+            </button>
+        </div>
+        <a href="{% url 'ajouter_cours' %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i>Nouveau Cours
+        </a>
+    </div>
+</div>
+
+<!-- Filtres et recherche -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <label for="search" class="form-label">Rechercher</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control search-box" id="search" name="search" 
+                           value="{{ search }}" placeholder="Nom de matière ou enseignant...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label for="semestre" class="form-label">Semestre</label>
+                <select class="form-select" id="semestre" name="semestre">
+                    <option value="">Tous les semestres</option>
+                    <option value="S1">Semestre 1</option>
+                    <option value="S2">Semestre 2</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="niveau" class="form-label">Niveau</label>
+                <select class="form-select" id="niveau" name="niveau">
+                    <option value="">Tous les niveaux</option>
+                    <option value="L1">Licence 1</option>
+                    <option value="L2">Licence 2</option>
+                    <option value="L3">Licence 3</option>
+                    <option value="M1">Master 1</option>
+                    <option value="M2">Master 2</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des cours -->
+<div class="row">
+    {% for cours in cours %}
+    <div class="col-lg-6 col-xl-4 mb-4">
+        <div class="card h-100 course-card">
+            <div class="card-header bg-gradient text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">{{ cours.matiere.code }}</h6>
+                    <span class="badge bg-light text-dark">{{ cours.matiere.credits }} crédits</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ cours.matiere.nom }}</h5>
+                <p class="card-text">
+                    <i class="fas fa-chalkboard-teacher text-primary me-2"></i>
+                    <strong>{{ cours.enseignant.nom_complet }}</strong>
+                </p>
+                <p class="card-text">
+                    <i class="fas fa-users text-success me-2"></i>
+                    {{ cours.classe.nom }} - {{ cours.classe.get_niveau_display }}
+                </p>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-info">{{ cours.get_semestre_display }}</span>
+                    <span class="badge bg-secondary">{{ cours.annee_scolaire }}</span>
+                </div>
+                {% if cours.matiere.description %}
+                <p class="card-text">
+                    <small class="text-muted">{{ cours.matiere.description|truncatewords:15 }}</small>
+                </p>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-transparent">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#courseDetailModal{{ cours.id }}">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <a href="{% url 'modifier_cours' cours.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'supprimer_cours' cours.pk %}" class="btn btn-outline-danger">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>{{ cours.annee_scolaire }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal détails cours -->
+    <div class="modal fade" id="courseDetailModal{{ cours.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-book me-2"></i>{{ cours.matiere.nom }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Informations générales</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><i class="fas fa-code text-primary me-2"></i>Code:</td>
+                                    <td><strong>{{ cours.matiere.code }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-star text-warning me-2"></i>Crédits:</td>
+                                    <td><span class="badge bg-warning">{{ cours.matiere.credits }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-calendar text-info me-2"></i>Semestre:</td>
+                                    <td><span class="badge bg-info">{{ cours.get_semestre_display }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-clock text-secondary me-2"></i>Année:</td>
+                                    <td>{{ cours.annee_scolaire }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Enseignant et classe</h6>
+                            <div class="card border-start border-primary border-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ cours.enseignant.nom_complet }}</h6>
+                                    <p class="card-text">
+                                        <small class="text-muted">{{ cours.enseignant.departement.nom }}</small><br>
+                                        <i class="fas fa-envelope me-1"></i>{{ cours.enseignant.user.email }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="card border-start border-success border-3 mt-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ cours.classe.nom }}</h6>
+                                    <p class="card-text">
+                                        <span class="badge bg-success">{{ cours.classe.get_niveau_display }}</span><br>
+                                        <small class="text-muted">{{ cours.classe.departement.nom }}</small>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if cours.matiere.description %}
+                    <div class="mt-4">
+                        <h6>Description</h6>
+                        <p class="text-muted">{{ cours.matiere.description }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <h6>Statistiques</h6>
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="border-end">
+                                    <h4 class="text-primary">{{ cours.classe.etudiant_set.count }}</h4>
+                                    <small class="text-muted">Étudiants</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border-end">
+                                    <h4 class="text-success">{{ cours.note_set.count }}</h4>
+                                    <small class="text-muted">Notes</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <h4 class="text-warning">{{ cours.emploidutemps_set.count }}</h4>
+                                <small class="text-muted">Séances</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary">
+                            <i class="fas fa-edit me-1"></i>Modifier
+                        </button>
+                        <button type="button" class="btn btn-success">
+                            <i class="fas fa-plus me-1"></i>Ajouter Note
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="fas fa-book fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Aucun cours trouvé</h5>
+            <p class="text-muted">Essayez de modifier vos critères de recherche ou ajoutez un nouveau cours.</p>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+                <i class="fas fa-plus me-1"></i>Ajouter un cours
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if cours.has_other_pages %}
+<nav aria-label="Navigation pagination">
+    <ul class="pagination justify-content-center">
+        {% if cours.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ cours.previous_page_number }}{% if search %}&search={{ search }}{% endif %}">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            </li>
+        {% endif %}
+        
+        {% for num in cours.paginator.page_range %}
+            {% if cours.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+            {% elif num > cours.number|add:'-3' and num < cours.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if cours.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ cours.next_page_number }}{% if search %}&search={{ search }}{% endif %}">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ cours.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Modal Ajouter Cours -->
+<div class="modal fade" id="addCourseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>Nouveau Cours
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="courseForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="matiere" class="form-label">Matière</label>
+                                <select class="form-select" id="matiere" required>
+                                    <option value="">Sélectionner une matière</option>
+                                    <option value="1">Mathématiques - MATH101</option>
+                                    <option value="2">Informatique - INFO101</option>
+                                    <option value="3">Physique - PHYS101</option>
+                                    <option value="4">Chimie - CHEM101</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="enseignant" class="form-label">Enseignant</label>
+                                <select class="form-select" id="enseignant" required>
+                                    <option value="">Sélectionner un enseignant</option>
+                                    <option value="1">Dr. Martin Dupont</option>
+                                    <option value="2">Prof. Sophie Bernard</option>
+                                    <option value="3">Dr. Jean Moreau</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="classe" class="form-label">Classe</label>
+                                <select class="form-select" id="classe" required>
+                                    <option value="">Sélectionner une classe</option>
+                                    <option value="1">L1-INFO-A</option>
+                                    <option value="2">L1-INFO-B</option>
+                                    <option value="3">L2-INFO-A</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="semestre" class="form-label">Semestre</label>
+                                <select class="form-select" id="semestre" required>
+                                    <option value="">Sélectionner</option>
+                                    <option value="S1">Semestre 1</option>
+                                    <option value="S2">Semestre 2</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="annee" class="form-label">Année scolaire</label>
+                                <input type="text" class="form-control" id="annee" value="2023-2024" required>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.course-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.bg-gradient {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+}
+
+.course-card .card-header {
+    border-bottom: none;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-submit du formulaire de recherche avec délai
+let searchTimeout;
+document.getElementById('search').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        this.form.submit();
+    }, 500);
+});
+
+// Auto-submit pour les filtres
+document.getElementById('semestre').addEventListener('change', function() {
+    this.form.submit();
+});
+
+document.getElementById('niveau').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+{% endblock %}

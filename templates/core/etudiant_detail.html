@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}{{ etudiant.nom_complet }} - Détails Étudiant{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-user-graduate me-2"></i>
+        Profil Étudiant
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-edit me-1"></i>Modifier
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-print me-1"></i>Imprimer
+            </button>
+        </div>
+        <a href="{% url 'etudiants_list' %}" class="btn btn-sm btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Retour
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informations personnelles -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-user me-2"></i>Informations Personnelles
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    {% if etudiant.avatar %}
+                        <img src="{{ etudiant.avatar.url }}" alt="Avatar" class="avatar-profile mb-3">
+                    {% else %}
+                        <div class="avatar-profile bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3">
+                            <i class="fas fa-user fa-3x"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <h4 class="card-title">{{ etudiant.nom_complet }}</h4>
+                <p class="text-muted">{{ etudiant.classe.nom }} - {{ etudiant.classe.get_niveau_display }}</p>
+                
+                <div class="row text-start mt-4">
+                    <div class="col-12 mb-3">
+                        <strong><i class="fas fa-id-card me-2 text-primary"></i>Numéro Étudiant:</strong><br>
+                        <span class="badge bg-primary fs-6">{{ etudiant.numero_etudiant }}</span>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <strong><i class="fas fa-envelope me-2 text-primary"></i>Email:</strong><br>
+                        <a href="mailto:{{ etudiant.user.email }}" class="text-decoration-none">{{ etudiant.user.email }}</a>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <strong><i class="fas fa-birthday-cake me-2 text-primary"></i>Date de naissance:</strong><br>
+                        {{ etudiant.date_naissance|date:"d F Y" }}
+                    </div>
+                    {% if etudiant.telephone %}
+                    <div class="col-12 mb-3">
+                        <strong><i class="fas fa-phone me-2 text-primary"></i>Téléphone:</strong><br>
+                        <a href="tel:{{ etudiant.telephone }}" class="text-decoration-none">{{ etudiant.telephone }}</a>
+                    </div>
+                    {% endif %}
+                    {% if etudiant.adresse %}
+                    <div class="col-12 mb-3">
+                        <strong><i class="fas fa-map-marker-alt me-2 text-primary"></i>Adresse:</strong><br>
+                        {{ etudiant.adresse }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistiques rapides -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-line me-2"></i>Statistiques
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h4 class="text-primary">{{ notes.count }}</h4>
+                            <small class="text-muted">Notes</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success">{{ cours.count }}</h4>
+                        <small class="text-muted">Cours</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="text-center">
+                    {% if notes %}
+                        {% with moyenne=notes|dictsort:"note"|last %}
+                        <h3 class="{% if moyenne.note >= 10 %}text-success{% else %}text-danger{% endif %}">
+                            {{ notes|dictsort:"note"|first.note|floatformat:2 }}/20
+                        </h3>
+                        <small class="text-muted">Moyenne générale</small>
+                        {% endwith %}
+                    {% else %}
+                        <h3 class="text-muted">—</h3>
+                        <small class="text-muted">Aucune note</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contenu principal -->
+    <div class="col-lg-8">
+        <!-- Onglets -->
+        <ul class="nav nav-tabs" id="studentTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">
+                    <i class="fas fa-chart-line me-2"></i>Notes
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cours-tab" data-bs-toggle="tab" data-bs-target="#cours" type="button" role="tab">
+                    <i class="fas fa-book me-2"></i>Cours
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="emploi-tab" data-bs-toggle="tab" data-bs-target="#emploi" type="button" role="tab">
+                    <i class="fas fa-calendar-alt me-2"></i>Emploi du temps
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="studentTabsContent">
+            <!-- Onglet Notes -->
+            <div class="tab-pane fade show active" id="notes" role="tabpanel">
+                <div class="card border-top-0" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+                    <div class="card-body">
+                        {% if notes %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Matière</th>
+                                            <th>Type</th>
+                                            <th>Note</th>
+                                            <th>Coefficient</th>
+                                            <th>Date</th>
+                                            <th>Commentaire</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for note in notes %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ note.cours.matiere.nom }}</strong><br>
+                                                <small class="text-muted">{{ note.cours.matiere.code }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">{{ note.get_type_evaluation_display }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="h5 mb-0 {% if note.note >= 10 %}text-success{% else %}text-danger{% endif %}">
+                                                    {{ note.note }}/20
+                                                </span>
+                                            </td>
+                                            <td>{{ note.coefficient }}</td>
+                                            <td>{{ note.date_evaluation|date:"d/m/Y" }}</td>
+                                            <td>
+                                                {% if note.commentaire %}
+                                                    <i class="fas fa-comment text-primary" data-bs-toggle="tooltip" title="{{ note.commentaire }}"></i>
+                                                {% else %}
+                                                    —
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Graphique des notes -->
+                            <div class="mt-4">
+                                <h6>Évolution des notes</h6>
+                                <canvas id="notesChart" height="100"></canvas>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Aucune note disponible</h5>
+                                <p class="text-muted">Les notes apparaîtront ici une fois saisies par les enseignants.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Onglet Cours -->
+            <div class="tab-pane fade" id="cours" role="tabpanel">
+                <div class="card border-top-0" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+                    <div class="card-body">
+                        {% if cours %}
+                            <div class="row">
+                                {% for course in cours %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100 border-start border-primary border-4">
+                                        <div class="card-body">
+                                            <h6 class="card-title">{{ course.matiere.nom }}</h6>
+                                            <p class="card-text">
+                                                <strong>Code:</strong> {{ course.matiere.code }}<br>
+                                                <strong>Enseignant:</strong> {{ course.enseignant.nom_complet }}<br>
+                                                <strong>Crédits:</strong> {{ course.matiere.credits }}<br>
+                                                <span class="badge bg-info">{{ course.get_semestre_display }}</span>
+                                                <span class="badge bg-secondary">{{ course.annee_scolaire }}</span>
+                                            </p>
+                                            {% if course.matiere.description %}
+                                            <small class="text-muted">{{ course.matiere.description|truncatewords:20 }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Aucun cours assigné</h5>
+                                <p class="text-muted">Les cours apparaîtront ici une fois l'étudiant inscrit.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Onglet Emploi du temps -->
+            <div class="tab-pane fade" id="emploi" role="tabpanel">
+                <div class="card border-top-0" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th width="100">Heure</th>
+                                        <th>Lundi</th>
+                                        <th>Mardi</th>
+                                        <th>Mercredi</th>
+                                        <th>Jeudi</th>
+                                        <th>Vendredi</th>
+                                        <th>Samedi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for heure in "08:00,09:00,10:00,11:00,12:00,13:00,14:00,15:00,16:00,17:00"|split:"," %}
+                                    <tr>
+                                        <td class="fw-bold bg-light">{{ heure }}</td>
+                                        {% for jour in "LUNDI,MARDI,MERCREDI,JEUDI,VENDREDI,SAMEDI"|split:"," %}
+                                        <td style="height: 60px; vertical-align: top;">
+                                            <!-- Ici on afficherait l'emploi du temps -->
+                                            <small class="text-muted">—</small>
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-profile {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--secondary-color);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.nav-tabs .nav-link {
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom-color: var(--primary-color);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.border-start.border-primary {
+    border-left-width: 4px !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialiser les tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Graphique des notes
+    {% if notes %}
+    const ctx = document.getElementById('notesChart');
+    if (ctx && typeof Chart !== 'undefined') {
+        const notesData = [
+            {% for note in notes %}
+            {
+                x: '{{ note.date_evaluation|date:"Y-m-d" }}',
+                y: {{ note.note }},
+                label: '{{ note.cours.matiere.nom|escapejs }}'
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Notes',
+                    data: notesData,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 20,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '/20';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].raw.label;
+                            },
+                            label: function(context) {
+                                return 'Note: ' + context.parsed.y + '/20';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

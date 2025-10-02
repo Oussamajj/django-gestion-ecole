@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+
+{% block title %}Liste des Enseignants - Gestion Scolaire{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-chalkboard-teacher me-2"></i>
+        Liste des Enseignants
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>Exporter
+            </button>
+        </div>
+        {% if user.is_superuser %}
+        <a href="{% url 'ajouter_enseignant' %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i>Nouvel Enseignant
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtres et recherche -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-8">
+                <label for="search" class="form-label">Rechercher</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control search-box" id="search" name="search" 
+                           value="{{ search }}" placeholder="Nom, prénom ou email...">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-1"></i>Filtrer
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('search').value=''; this.form.submit();">
+                        <i class="fas fa-times me-1"></i>Effacer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des enseignants -->
+<div class="card">
+    <div class="card-header">
+        <span><i class="fas fa-list me-2"></i>Enseignants ({{ enseignants.paginator.count }} résultats)</span>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for enseignant in enseignants %}
+            <div class="col-lg-6 col-xl-4 mb-4">
+                <div class="card h-100 teacher-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="me-3">
+                                {% if enseignant.avatar %}
+                                    <img src="{{ enseignant.avatar.url }}" alt="Avatar" class="avatar-lg">
+                                {% else %}
+                                    <div class="avatar-lg bg-success text-white d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-user fa-2x"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="card-title mb-1">{{ enseignant.nom_complet }}</h6>
+                                <p class="text-muted mb-1">
+                                    <i class="fas fa-building me-1"></i>{{ enseignant.departement.nom }}
+                                </p>
+                                <p class="text-muted mb-0">
+                                    <i class="fas fa-envelope me-1"></i>{{ enseignant.user.email }}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="row text-center mb-3">
+                            <div class="col-6">
+                                <div class="border-end">
+                                    <h6 class="text-primary mb-0">{{ enseignant.cours_set.count }}</h6>
+                                    <small class="text-muted">Cours</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <h6 class="text-success mb-0">
+                                    {% with total_etudiants=enseignant.cours_set.all|length %}
+                                        {{ total_etudiants|default:0 }}
+                                    {% endwith %}
+                                </h6>
+                                <small class="text-muted">Classes</small>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                {% if enseignant.telephone %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-phone me-1"></i>{{ enseignant.telephone }}
+                                    </small>
+                                {% endif %}
+                            </div>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#teacherDetailModal{{ enseignant.id }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <a href="{% url 'modifier_enseignant' enseignant.pk %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'supprimer_enseignant' enseignant.pk %}" class="btn btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal détails enseignant -->
+            <div class="modal fade" id="teacherDetailModal{{ enseignant.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-chalkboard-teacher me-2"></i>{{ enseignant.nom_complet }}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-4 text-center">
+                                    {% if enseignant.avatar %}
+                                        <img src="{{ enseignant.avatar.url }}" alt="Avatar" class="avatar-profile mb-3">
+                                    {% else %}
+                                        <div class="avatar-profile bg-success text-white d-inline-flex align-items-center justify-content-center mb-3">
+                                            <i class="fas fa-user fa-3x"></i>
+                                        </div>
+                                    {% endif %}
+                                    <h5>{{ enseignant.nom_complet }}</h5>
+                                    <p class="text-muted">{{ enseignant.departement.nom }}</p>
+                                </div>
+                                <div class="col-md-8">
+                                    <h6>Informations de contact</h6>
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><i class="fas fa-envelope text-primary me-2"></i>Email:</td>
+                                            <td>{{ enseignant.user.email }}</td>
+                                        </tr>
+                                        {% if enseignant.telephone %}
+                                        <tr>
+                                            <td><i class="fas fa-phone text-primary me-2"></i>Téléphone:</td>
+                                            <td>{{ enseignant.telephone }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        <tr>
+                                            <td><i class="fas fa-calendar text-primary me-2"></i>Date d'embauche:</td>
+                                            <td>{{ enseignant.date_embauche|date:"d F Y" }}</td>
+                                        </tr>
+                                        {% if enseignant.adresse %}
+                                        <tr>
+                                            <td><i class="fas fa-map-marker-alt text-primary me-2"></i>Adresse:</td>
+                                            <td>{{ enseignant.adresse }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                    
+                                    <h6 class="mt-4">Cours enseignés</h6>
+                                    {% if enseignant.cours_set.all %}
+                                        <div class="row">
+                                            {% for cours in enseignant.cours_set.all %}
+                                            <div class="col-md-6 mb-2">
+                                                <div class="card border-start border-success border-3">
+                                                    <div class="card-body py-2">
+                                                        <h6 class="card-title mb-1">{{ cours.matiere.nom }}</h6>
+                                                        <small class="text-muted">{{ cours.classe.nom }} - {{ cours.get_semestre_display }}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-muted">Aucun cours assigné.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                            <button type="button" class="btn btn-primary">
+                                <i class="fas fa-edit me-1"></i>Modifier
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-chalkboard-teacher fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun enseignant trouvé</h5>
+                    <p class="text-muted">Essayez de modifier vos critères de recherche.</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if enseignants.has_other_pages %}
+        <nav aria-label="Navigation pagination">
+            <ul class="pagination justify-content-center">
+                {% if enseignants.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ enseignants.previous_page_number }}{% if search %}&search={{ search }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in enseignants.paginator.page_range %}
+                    {% if enseignants.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > enseignants.number|add:'-3' and num < enseignants.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if enseignants.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ enseignants.next_page_number }}{% if search %}&search={{ search }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ enseignants.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Ajouter Enseignant -->
+<div class="modal fade" id="addTeacherModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>Nouvel Enseignant
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="teacherForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="firstName" class="form-label">Prénom</label>
+                                <input type="text" class="form-control" id="firstName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="lastName" class="form-label">Nom</label>
+                                <input type="text" class="form-control" id="lastName" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="departement" class="form-label">Département</label>
+                                <select class="form-select" id="departement" required>
+                                    <option value="">Sélectionner un département</option>
+                                    <option value="1">Informatique</option>
+                                    <option value="2">Mathématiques</option>
+                                    <option value="3">Physique</option>
+                                    <option value="4">Chimie</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Téléphone</label>
+                                <input type="tel" class="form-control" id="phone">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="hireDate" class="form-label">Date d'embauche</label>
+                                <input type="date" class="form-control" id="hireDate" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Adresse</label>
+                        <textarea class="form-control" id="address" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.teacher-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.teacher-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.avatar-profile {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--success-color);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-submit du formulaire de recherche avec délai
+let searchTimeout;
+document.getElementById('search').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        this.form.submit();
+    }, 500);
+});
+</script>
+{% endblock %}

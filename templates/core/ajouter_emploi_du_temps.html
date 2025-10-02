@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+
+{% block title %}Ajouter Emploi du Temps - EduManager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-calendar-plus me-2 text-success"></i>
+        Ajouter un Créneau
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'emploi_du_temps_list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-plus me-2"></i>
+                    Nouveau Créneau d'Emploi du Temps
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cours" class="form-label">
+                                <i class="fas fa-book me-1 text-primary"></i>Cours *
+                            </label>
+                            <select name="cours" id="cours" class="form-select" required>
+                                <option value="">Sélectionner un cours</option>
+                                {% for cours in cours_list %}
+                                <option value="{{ cours.id }}" data-enseignant="{{ cours.enseignant.user.get_full_name }}" data-classe="{{ cours.classe.nom }}">
+                                    {{ cours.matiere.nom }} - {{ cours.classe.nom }} ({{ cours.enseignant.user.get_full_name }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="jour" class="form-label">
+                                <i class="fas fa-calendar-day me-1 text-info"></i>Jour *
+                            </label>
+                            <select name="jour" id="jour" class="form-select" required>
+                                <option value="">Sélectionner un jour</option>
+                                {% for jour_value, jour_label in jours %}
+                                <option value="{{ jour_value }}">{{ jour_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="heure_debut" class="form-label">
+                                <i class="fas fa-clock me-1 text-warning"></i>Heure de début *
+                            </label>
+                            <input type="time" name="heure_debut" id="heure_debut" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="heure_fin" class="form-label">
+                                <i class="fas fa-clock me-1 text-warning"></i>Heure de fin *
+                            </label>
+                            <input type="time" name="heure_fin" id="heure_fin" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="type_cours" class="form-label">
+                                <i class="fas fa-tag me-1 text-secondary"></i>Type de cours
+                            </label>
+                            <select name="type_cours" id="type_cours" class="form-select">
+                                {% for type_value, type_label in types_cours %}
+                                <option value="{{ type_value }}">
+                                    {% if type_value == 'cours' %}📚{% elif type_value == 'td' %}👥{% elif type_value == 'tp' %}💻{% elif type_value == 'examen' %}📋{% else %}⏰{% endif %}
+                                    {{ type_label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="salle" class="form-label">
+                                <i class="fas fa-door-open me-1 text-dark"></i>Salle
+                            </label>
+                            <input type="text" name="salle" id="salle" class="form-control" placeholder="Ex: A101, Lab Info, Amphi 1">
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'emploi_du_temps_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i>Ajouter le créneau
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2 text-info"></i>Informations
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-lightbulb me-2"></i>Types de cours</h6>
+                    <ul class="mb-0 small">
+                        <li><strong>📚 Cours :</strong> Cours magistral</li>
+                        <li><strong>👥 TD :</strong> Travaux dirigés</li>
+                        <li><strong>💻 TP :</strong> Travaux pratiques</li>
+                        <li><strong>📋 Examen :</strong> Évaluation</li>
+                        <li><strong>⏰ Autre :</strong> Autre activité</li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Détection de conflits</h6>
+                    <p class="mb-0 small">
+                        Le système vérifie automatiquement les conflits d'horaires pour :
+                        <br>• La salle
+                        <br>• L'enseignant
+                        <br>• La classe
+                    </p>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">
+                            <i class="fas fa-eye me-2"></i>Aperçu du cours
+                        </h6>
+                    </div>
+                    <div class="card-body" id="cours-preview">
+                        <p class="text-muted small">Sélectionnez un cours pour voir les détails</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Aperçu du cours sélectionné
+document.getElementById('cours').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const previewDiv = document.getElementById('cours-preview');
+    
+    if (selectedOption.value) {
+        const enseignant = selectedOption.getAttribute('data-enseignant');
+        const classe = selectedOption.getAttribute('data-classe');
+        const matiere = selectedOption.text.split(' - ')[0];
+        
+        previewDiv.innerHTML = `
+            <div class="small">
+                <div class="mb-2">
+                    <i class="fas fa-book text-primary me-1"></i>
+                    <strong>Matière:</strong> ${matiere}
+                </div>
+                <div class="mb-2">
+                    <i class="fas fa-chalkboard-teacher text-info me-1"></i>
+                    <strong>Enseignant:</strong> ${enseignant}
+                </div>
+                <div class="mb-0">
+                    <i class="fas fa-users text-success me-1"></i>
+                    <strong>Classe:</strong> ${classe}
+                </div>
+            </div>
+        `;
+    } else {
+        previewDiv.innerHTML = '<p class="text-muted small">Sélectionnez un cours pour voir les détails</p>';
+    }
+});
+
+// Validation des heures
+document.getElementById('heure_fin').addEventListener('change', function() {
+    const heureDebut = document.getElementById('heure_debut').value;
+    const heureFin = this.value;
+    
+    if (heureDebut && heureFin && heureFin <= heureDebut) {
+        alert('L\'heure de fin doit être postérieure à l\'heure de début');
+        this.value = '';
+    }
+});
+
+// Suggestions d'horaires courants
+document.getElementById('heure_debut').addEventListener('focus', function() {
+    if (!this.value) {
+        // Suggestions d'horaires courants
+        const now = new Date();
+        const hour = now.getHours();
+        
+        if (hour < 9) {
+            this.value = '08:00';
+        } else if (hour < 11) {
+            this.value = '10:00';
+        } else if (hour < 14) {
+            this.value = '14:00';
+        } else {
+            this.value = '16:00';
+        }
+    }
+});
+
+document.getElementById('heure_fin').addEventListener('focus', function() {
+    const heureDebut = document.getElementById('heure_debut').value;
+    if (heureDebut && !this.value) {
+        // Ajouter 2 heures par défaut
+        const [hours, minutes] = heureDebut.split(':');
+        const newHour = parseInt(hours) + 2;
+        this.value = `${newHour.toString().padStart(2, '0')}:${minutes}`;
+    }
+});
+</script>
+{% endblock %}

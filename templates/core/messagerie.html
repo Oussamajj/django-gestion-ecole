@@ -1,0 +1,498 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Messagerie - EduManager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-envelope me-2"></i>
+        Messagerie
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="markAllAsRead()">
+                <i class="fas fa-check-double me-1"></i>Tout marquer comme lu
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-info" onclick="refreshMessages()">
+                <i class="fas fa-sync me-1"></i>Actualiser
+            </button>
+        </div>
+        <a href="{% url 'envoyer_message' %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-paper-plane me-1"></i>Nouveau Message
+        </a>
+    </div>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Messages Reçus</div>
+                    <div class="h3 mb-0 font-weight-bold">{{ messages_recus.paginator.count }}</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-inbox"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="stats-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Messages Envoyés</div>
+                    <div class="h3 mb-0 font-weight-bold">{{ messages_envoyes.paginator.count }}</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="stats-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Non Lus</div>
+                    <div class="h3 mb-0 font-weight-bold">
+                        {% with non_lus=messages_recus.object_list|length %}
+                        {{ non_lus }}
+                        {% endwith %}
+                    </div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-envelope-open"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="stats-card info">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Messages Importants</div>
+                    <div class="h3 mb-0 font-weight-bold">3</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Onglets -->
+<ul class="nav nav-tabs mb-4" id="messageTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="received-tab" data-bs-toggle="tab" data-bs-target="#received" type="button" role="tab">
+            <i class="fas fa-inbox me-2"></i>Messages Reçus
+            <span class="badge bg-primary ms-2">{{ messages_recus.paginator.count }}</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button" role="tab">
+            <i class="fas fa-paper-plane me-2"></i>Messages Envoyés
+            <span class="badge bg-success ms-2">{{ messages_envoyes.paginator.count }}</span>
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="messageTabContent">
+    <!-- Messages Reçus -->
+    <div class="tab-pane fade show active" id="received" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-inbox me-2"></i>Messages Reçus</span>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary" onclick="filterMessages('all')">
+                        Tous
+                    </button>
+                    <button type="button" class="btn btn-outline-warning" onclick="filterMessages('unread')">
+                        Non lus
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" onclick="filterMessages('important')">
+                        Importants
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if messages_recus %}
+                <div class="list-group list-group-flush">
+                    {% for message in messages_recus %}
+                    <div class="list-group-item message-item {% if not message.lu %}message-unread{% endif %} {% if message.important %}message-important{% endif %}"
+                         data-message-id="{{ message.id }}" onclick="openMessage({{ message.id }})">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="d-flex align-items-center flex-grow-1">
+                                <!-- Avatar expéditeur -->
+                                <div class="me-3">
+                                    {% if message.expediteur.profil.avatar %}
+                                        <img src="{{ message.expediteur.profil.avatar.url }}" alt="Avatar" class="avatar">
+                                    {% else %}
+                                        <div class="avatar bg-primary text-white d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Contenu du message -->
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <h6 class="mb-0 {% if not message.lu %}fw-bold{% endif %}">
+                                            {{ message.expediteur.get_full_name }}
+                                            {% if message.important %}
+                                                <i class="fas fa-exclamation-circle text-danger ms-1"></i>
+                                            {% endif %}
+                                        </h6>
+                                        <small class="text-muted">{{ message.date_envoi|date:"d/m/Y H:i" }}</small>
+                                    </div>
+                                    <p class="mb-1 {% if not message.lu %}fw-bold{% endif %}">{{ message.sujet }}</p>
+                                    <p class="mb-0 text-muted small">{{ message.contenu|truncatewords:15 }}</p>
+                                </div>
+                                
+                                <!-- Indicateurs -->
+                                <div class="ms-3 text-end">
+                                    {% if not message.lu %}
+                                        <div class="badge bg-primary rounded-pill">Nouveau</div>
+                                    {% endif %}
+                                    {% if message.important %}
+                                        <div class="badge bg-danger rounded-pill mt-1">Important</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination Messages Reçus -->
+                {% if messages_recus.has_other_pages %}
+                <div class="card-footer">
+                    <nav aria-label="Navigation pagination messages reçus">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if messages_recus.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page_recus={{ messages_recus.previous_page_number }}">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">{{ messages_recus.number }} / {{ messages_recus.paginator.num_pages }}</span>
+                            </li>
+                            
+                            {% if messages_recus.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page_recus={{ messages_recus.next_page_number }}">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun message reçu</h5>
+                    <p class="text-muted">Vous n'avez encore reçu aucun message.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Messages Envoyés -->
+    <div class="tab-pane fade" id="sent" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-paper-plane me-2"></i>Messages Envoyés
+            </div>
+            <div class="card-body p-0">
+                {% if messages_envoyes %}
+                <div class="list-group list-group-flush">
+                    {% for message in messages_envoyes %}
+                    <div class="list-group-item message-item" onclick="openSentMessage({{ message.id }})">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="d-flex align-items-center flex-grow-1">
+                                <!-- Icône message envoyé -->
+                                <div class="me-3">
+                                    <div class="avatar bg-success text-white d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </div>
+                                </div>
+                                
+                                <!-- Contenu du message -->
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <h6 class="mb-0">
+                                            À: {% if message.destinataire %}
+                                                {{ message.destinataire.get_full_name }}
+                                            {% elif message.pour_tous_enseignants %}
+                                                Tous les enseignants
+                                            {% elif message.pour_tous_etudiants %}
+                                                Tous les étudiants
+                                            {% else %}
+                                                Destinataires multiples
+                                            {% endif %}
+                                            {% if message.important %}
+                                                <i class="fas fa-exclamation-circle text-danger ms-1"></i>
+                                            {% endif %}
+                                        </h6>
+                                        <small class="text-muted">{{ message.date_envoi|date:"d/m/Y H:i" }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ message.sujet }}</p>
+                                    <p class="mb-0 text-muted small">{{ message.contenu|truncatewords:15 }}</p>
+                                </div>
+                                
+                                <!-- Statut -->
+                                <div class="ms-3">
+                                    <span class="badge bg-success">Envoyé</span>
+                                    {% if message.important %}
+                                        <div class="badge bg-danger rounded-pill mt-1">Important</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination Messages Envoyés -->
+                {% if messages_envoyes.has_other_pages %}
+                <div class="card-footer">
+                    <nav aria-label="Navigation pagination messages envoyés">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if messages_envoyes.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page_envoyes={{ messages_envoyes.previous_page_number }}">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">{{ messages_envoyes.number }} / {{ messages_envoyes.paginator.num_pages }}</span>
+                            </li>
+                            
+                            {% if messages_envoyes.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page_envoyes={{ messages_envoyes.next_page_number }}">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-paper-plane fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun message envoyé</h5>
+                    <p class="text-muted">Vous n'avez encore envoyé aucun message.</p>
+                    <a href="{% url 'envoyer_message' %}" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-1"></i>Envoyer votre premier message
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour lire un message -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="messageModalTitle">
+                    <i class="fas fa-envelope me-2"></i>Message
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="messageModalBody">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" onclick="replyToMessage()">
+                    <i class="fas fa-reply me-1"></i>Répondre
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+
+.stats-card.success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.stats-card.warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stats-card.info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.message-item {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.message-item:hover {
+    background-color: #f8f9fa;
+    border-left-color: #007bff;
+}
+
+.message-unread {
+    background-color: #e3f2fd;
+    border-left-color: #2196f3;
+}
+
+.message-important {
+    border-left-color: #f44336;
+}
+
+.avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.nav-tabs .nav-link {
+    border-radius: 10px 10px 0 0;
+}
+
+.nav-tabs .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+}
+
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Ouvrir un message reçu
+function openMessage(messageId) {
+    // Marquer comme lu visuellement
+    const messageItem = document.querySelector(`[data-message-id="${messageId}"]`);
+    messageItem.classList.remove('message-unread');
+    
+    // Charger le contenu du message (simulation)
+    const modalTitle = document.getElementById('messageModalTitle');
+    const modalBody = document.getElementById('messageModalBody');
+    
+    modalTitle.innerHTML = '<i class="fas fa-envelope me-2"></i>Chargement...';
+    modalBody.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Chargement du message...</div>';
+    
+    // Afficher le modal
+    const modal = new bootstrap.Modal(document.getElementById('messageModal'));
+    modal.show();
+    
+    // Simuler le chargement du contenu
+    setTimeout(() => {
+        modalTitle.innerHTML = '<i class="fas fa-envelope me-2"></i>Message de John Doe';
+        modalBody.innerHTML = `
+            <div class="mb-3">
+                <strong>De:</strong> John Doe (john.doe@example.com)<br>
+                <strong>Date:</strong> ${new Date().toLocaleDateString('fr-FR')}<br>
+                <strong>Sujet:</strong> Exemple de message
+            </div>
+            <hr>
+            <div class="message-content">
+                <p>Ceci est un exemple de contenu de message. Le contenu réel serait chargé depuis le serveur.</p>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+            </div>
+        `;
+    }, 1000);
+}
+
+// Ouvrir un message envoyé
+function openSentMessage(messageId) {
+    openMessage(messageId); // Même logique pour l'instant
+}
+
+// Répondre à un message
+function replyToMessage() {
+    window.location.href = '{% url "envoyer_message" %}';
+}
+
+// Marquer tous les messages comme lus
+function markAllAsRead() {
+    if (confirm('Marquer tous les messages comme lus ?')) {
+        // Implémenter la logique
+        document.querySelectorAll('.message-unread').forEach(item => {
+            item.classList.remove('message-unread');
+        });
+        
+        // Mettre à jour le compteur
+        document.querySelector('.stats-card.warning .h3').textContent = '0';
+    }
+}
+
+// Actualiser les messages
+function refreshMessages() {
+    location.reload();
+}
+
+// Filtrer les messages
+function filterMessages(type) {
+    const messages = document.querySelectorAll('.message-item');
+    
+    messages.forEach(message => {
+        let show = true;
+        
+        switch(type) {
+            case 'unread':
+                show = message.classList.contains('message-unread');
+                break;
+            case 'important':
+                show = message.classList.contains('message-important');
+                break;
+            case 'all':
+            default:
+                show = true;
+                break;
+        }
+        
+        message.style.display = show ? 'block' : 'none';
+    });
+}
+
+// Auto-refresh toutes les 30 secondes
+setInterval(() => {
+    // Vérifier s'il y a de nouveaux messages (AJAX)
+    // Pour l'instant, juste un log
+    console.log('Vérification de nouveaux messages...');
+}, 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+
+{% block title %}Liste des Étudiants - Gestion Scolaire{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-graduation-cap me-2"></i>
+            Liste des Étudiants
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            {% if user.is_superuser %}
+            <a href="{% url 'ajouter_etudiant' %}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus me-1"></i>Ajouter un Étudiant
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>Exporter
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres et recherche -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <label for="search" class="form-label">Rechercher</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control search-box" id="search" name="search" 
+                           value="{{ search }}" placeholder="Nom, prénom ou numéro étudiant...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label for="classe" class="form-label">Classe</label>
+                <select class="form-select" id="classe" name="classe">
+                    <option value="">Toutes les classes</option>
+                    {% for classe in classes %}
+                        <option value="{{ classe.id }}" {% if classe.id|stringformat:"s" == classe_id %}selected{% endif %}>
+                            {{ classe.nom }} - {{ classe.get_niveau_display }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-1"></i>Filtrer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des étudiants -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-list me-2"></i>Étudiants ({{ etudiants.paginator.count }} résultats)</span>
+        <div class="btn-group btn-group-sm" role="group">
+            <input type="radio" class="btn-check" name="view" id="grid-view" autocomplete="off" checked>
+            <label class="btn btn-outline-secondary" for="grid-view"><i class="fas fa-th"></i></label>
+            
+            <input type="radio" class="btn-check" name="view" id="list-view" autocomplete="off">
+            <label class="btn btn-outline-secondary" for="list-view"><i class="fas fa-list"></i></label>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Vue grille (par défaut) -->
+        <div id="grid-container">
+            <div class="row">
+                {% for etudiant in etudiants %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 student-card">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                {% if etudiant.avatar %}
+                                    <img src="{{ etudiant.avatar.url }}" alt="Avatar" class="avatar-lg">
+                                {% else %}
+                                    <div class="avatar-lg bg-primary text-white d-inline-flex align-items-center justify-content-center">
+                                        <i class="fas fa-user fa-2x"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <h6 class="card-title">{{ etudiant.nom_complet }}</h6>
+                            <p class="card-text">
+                                <span class="badge bg-primary mb-2">{{ etudiant.numero_etudiant }}</span><br>
+                                <small class="text-muted">{{ etudiant.classe.nom }} - {{ etudiant.classe.get_niveau_display }}</small>
+                            </p>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'etudiant_detail' etudiant.pk %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'modifier_etudiant' etudiant.pk %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'supprimer_etudiant' etudiant.pk %}" class="btn btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-graduate fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucun étudiant trouvé</h5>
+                        <p class="text-muted">Essayez de modifier vos critères de recherche.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Vue liste (cachée par défaut) -->
+        <div id="list-container" style="display: none;">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Avatar</th>
+                            <th>Nom Complet</th>
+                            <th>Numéro Étudiant</th>
+                            <th>Classe</th>
+                            <th>Téléphone</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for etudiant in etudiants %}
+                        <tr>
+                            <td>
+                                {% if etudiant.avatar %}
+                                    <img src="{{ etudiant.avatar.url }}" alt="Avatar" class="avatar">
+                                {% else %}
+                                    <div class="avatar bg-primary text-white d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ etudiant.nom_complet }}</strong><br>
+                                <small class="text-muted">{{ etudiant.user.email }}</small>
+                            </td>
+                            <td><span class="badge bg-primary">{{ etudiant.numero_etudiant }}</span></td>
+                            <td>
+                                {{ etudiant.classe.nom }}<br>
+                                <small class="text-muted">{{ etudiant.classe.get_niveau_display }}</small>
+                            </td>
+                            <td>{{ etudiant.telephone|default:"—" }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'etudiant_detail' etudiant.pk %}" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'modifier_etudiant' etudiant.pk %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'supprimer_etudiant' etudiant.pk %}" class="btn btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if etudiants.has_other_pages %}
+        <nav aria-label="Navigation pagination">
+            <ul class="pagination justify-content-center">
+                {% if etudiants.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if classe_id %}&classe={{ classe_id }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ etudiants.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if classe_id %}&classe={{ classe_id }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in etudiants.paginator.page_range %}
+                    {% if etudiants.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > etudiants.number|add:'-3' and num < etudiants.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if classe_id %}&classe={{ classe_id }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if etudiants.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ etudiants.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if classe_id %}&classe={{ classe_id }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ etudiants.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if classe_id %}&classe={{ classe_id }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Ajouter Étudiant -->
+<div class="modal fade" id="addStudentModal" tabindex="-1" aria-labelledby="addStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addStudentModalLabel">
+                    <i class="fas fa-user-plus me-2"></i>Nouvel Étudiant
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="studentForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="firstName" class="form-label">Prénom</label>
+                                <input type="text" class="form-control" id="firstName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="lastName" class="form-label">Nom</label>
+                                <input type="text" class="form-control" id="lastName" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="studentNumber" class="form-label">Numéro Étudiant</label>
+                                <input type="text" class="form-control" id="studentNumber" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="classe" class="form-label">Classe</label>
+                                <select class="form-select" id="classe" required>
+                                    <option value="">Sélectionner une classe</option>
+                                    {% for classe in classes %}
+                                        <option value="{{ classe.id }}">{{ classe.nom }} - {{ classe.get_niveau_display }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="birthDate" class="form-label">Date de naissance</label>
+                                <input type="date" class="form-control" id="birthDate" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Téléphone</label>
+                        <input type="tel" class="form-control" id="phone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Adresse</label>
+                        <textarea class="form-control" id="address" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.student-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.student-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.avatar-lg {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--secondary-color);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Basculer entre vue grille et vue liste
+document.getElementById('grid-view').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('grid-container').style.display = 'block';
+        document.getElementById('list-container').style.display = 'none';
+    }
+});
+
+document.getElementById('list-view').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('grid-container').style.display = 'none';
+        document.getElementById('list-container').style.display = 'block';
+    }
+});
+
+// Auto-submit du formulaire de recherche avec délai
+let searchTimeout;
+document.getElementById('search').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        this.form.submit();
+    }, 500);
+});
+</script>
+{% endblock %}

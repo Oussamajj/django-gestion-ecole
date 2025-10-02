@@ -1,0 +1,616 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Gestion des Utilisateurs - EduManager{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-users-cog me-2"></i>
+        Gestion des Utilisateurs
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>Exporter
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-info">
+                <i class="fas fa-print me-1"></i>Imprimer
+            </button>
+        </div>
+        <a href="{% url 'creer_utilisateur' %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-user-plus me-1"></i>Nouvel Utilisateur
+        </a>
+    </div>
+</div>
+
+<!-- Filtres et recherche -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <label for="search" class="form-label">Rechercher</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Nom, prénom, email, identifiant...">
+            </div>
+            <div class="col-md-4">
+                <label for="type" class="form-label">Type d'utilisateur</label>
+                <select class="form-select" id="type" name="type">
+                    <option value="">Tous les types</option>
+                    <option value="admin" {% if type_user == 'admin' %}selected{% endif %}>Administrateurs</option>
+                    <option value="enseignant" {% if type_user == 'enseignant' %}selected{% endif %}>Enseignants</option>
+                    <option value="etudiant" {% if type_user == 'etudiant' %}selected{% endif %}>Étudiants</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Rechercher
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Total Utilisateurs</div>
+                    <div class="h3 mb-0 font-weight-bold">{{ utilisateurs.paginator.count }}</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="stats-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Comptes Actifs</div>
+                    <div class="h3 mb-0 font-weight-bold">{{ utilisateurs.paginator.count }}</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-user-check"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="stats-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Mots de passe temporaires</div>
+                    <div class="h3 mb-0 font-weight-bold">5</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-key"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="stats-card info">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Connexions Aujourd'hui</div>
+                    <div class="h3 mb-0 font-weight-bold">42</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-sign-in-alt"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des utilisateurs -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-list me-2"></i>Utilisateurs ({{ utilisateurs.paginator.count }} résultats)</span>
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-secondary" onclick="selectAll()">
+                <i class="fas fa-check-square"></i> Tout sélectionner
+            </button>
+            <button type="button" class="btn btn-outline-danger" onclick="bulkAction('disable')">
+                <i class="fas fa-ban"></i> Désactiver
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th width="40">
+                            <input type="checkbox" class="form-check-input" id="selectAllCheckbox">
+                        </th>
+                        <th>Utilisateur</th>
+                        <th>Type</th>
+                        <th>Email</th>
+                        <th>Statut</th>
+                        <th>Mot de passe</th>
+                        <th>Dernière connexion</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for utilisateur in utilisateurs %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="form-check-input user-checkbox" 
+                                   value="{{ utilisateur.id }}">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if utilisateur.profil and utilisateur.profil.avatar %}
+                                    <img src="{{ utilisateur.profil.avatar.url }}" alt="Avatar" class="avatar me-2">
+                                {% else %}
+                                    <div class="avatar bg-primary text-white d-flex align-items-center justify-content-center me-2">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ utilisateur.get_full_name }}</strong><br>
+                                    <small class="text-muted">@{{ utilisateur.username }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if utilisateur.is_superuser %}
+                                <span class="badge bg-danger">Administrateur</span>
+                            {% elif utilisateur.enseignant %}
+                                <span class="badge bg-info">Enseignant</span>
+                                <br><small class="text-muted">{{ utilisateur.enseignant.departement.nom }}</small>
+                            {% elif utilisateur.etudiant %}
+                                <span class="badge bg-success">Étudiant</span>
+                                <br><small class="text-muted">{{ utilisateur.etudiant.classe.nom }}</small>
+                            {% else %}
+                                <span class="badge bg-secondary">Autre</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ utilisateur.email|default:"Non renseigné" }}
+                            {% if not utilisateur.email %}
+                                <i class="fas fa-exclamation-triangle text-warning ms-1" 
+                                   title="Email manquant"></i>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if utilisateur.profil and utilisateur.profil.compte_active %}
+                                <span class="badge bg-success">Actif</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Non configuré</span>
+                            {% endif %}
+                            
+                            {% if utilisateur.profil and utilisateur.profil.mot_de_passe_temporaire %}
+                                <br><span class="badge bg-warning">MDP temporaire</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <input type="password" class="form-control form-control-sm me-2" 
+                                       id="password-{{ utilisateur.id }}" 
+                                       value="********" readonly style="width: 100px;">
+                                <button type="button" class="btn btn-sm btn-outline-secondary me-1" 
+                                        onclick="togglePassword({{ utilisateur.id }})" 
+                                        title="Afficher/Masquer">
+                                    <i class="fas fa-eye" id="eye-{{ utilisateur.id }}"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        onclick="editPassword({{ utilisateur.id }})" 
+                                        title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            {% if utilisateur.last_login %}
+                                {{ utilisateur.last_login|date:"d/m/Y H:i" }}<br>
+                                <small class="text-muted">
+                                    {% if utilisateur.profil and utilisateur.profil.derniere_connexion_ip %}
+                                        IP: {{ utilisateur.profil.derniere_connexion_ip }}
+                                    {% endif %}
+                                </small>
+                            {% else %}
+                                <span class="text-muted">Jamais connecté</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary" 
+                                        data-bs-toggle="modal" data-bs-target="#userModal{{ utilisateur.id }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary"
+                                        onclick="editUser({{ utilisateur.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-warning"
+                                        onclick="resetPassword({{ utilisateur.id }})">
+                                    <i class="fas fa-key"></i>
+                                </button>
+                                {% if not utilisateur.is_superuser %}
+                                <button type="button" class="btn btn-outline-danger"
+                                        onclick="toggleUser({{ utilisateur.id }})">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if utilisateurs.has_other_pages %}
+        <nav aria-label="Navigation pagination">
+            <ul class="pagination justify-content-center">
+                {% if utilisateurs.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if type_user %}&type={{ type_user }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ utilisateurs.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if type_user %}&type={{ type_user }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in utilisateurs.paginator.page_range %}
+                    {% if utilisateurs.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > utilisateurs.number|add:'-3' and num < utilisateurs.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if type_user %}&type={{ type_user }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if utilisateurs.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ utilisateurs.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if type_user %}&type={{ type_user }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ utilisateurs.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if type_user %}&type={{ type_user }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modals pour les détails utilisateurs -->
+{% for utilisateur in utilisateurs %}
+<div class="modal fade" id="userModal{{ utilisateur.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user me-2"></i>{{ utilisateur.get_full_name }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        {% if utilisateur.profil.avatar %}
+                            <img src="{{ utilisateur.profil.avatar.url }}" alt="Avatar" 
+                                 class="img-fluid rounded-circle mb-3" style="max-width: 150px;">
+                        {% else %}
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" 
+                                 style="width: 150px; height: 150px; font-size: 3rem;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <h5>{{ utilisateur.get_full_name }}</h5>
+                        <p class="text-muted">@{{ utilisateur.username }}</p>
+                    </div>
+                    <div class="col-md-8">
+                        <h6><i class="fas fa-info-circle me-2"></i>Informations générales</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Email:</strong></td>
+                                <td>{{ utilisateur.email|default:"Non renseigné" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Téléphone:</strong></td>
+                                <td>{{ utilisateur.profil.telephone|default:"Non renseigné" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Date d'inscription:</strong></td>
+                                <td>{{ utilisateur.date_joined|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Dernière connexion:</strong></td>
+                                <td>{{ utilisateur.last_login|date:"d/m/Y H:i"|default:"Jamais" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Nombre de connexions:</strong></td>
+                                <td>{{ utilisateur.profil.nombre_connexions }}</td>
+                            </tr>
+                        </table>
+                        
+                        {% if utilisateur.enseignant %}
+                        <h6 class="mt-3"><i class="fas fa-chalkboard-teacher me-2"></i>Informations enseignant</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Département:</strong></td>
+                                <td>{{ utilisateur.enseignant.departement.nom }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Date d'embauche:</strong></td>
+                                <td>{{ utilisateur.enseignant.date_embauche|date:"d/m/Y" }}</td>
+                            </tr>
+                        </table>
+                        {% elif utilisateur.etudiant %}
+                        <h6 class="mt-3"><i class="fas fa-graduation-cap me-2"></i>Informations étudiant</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Numéro étudiant:</strong></td>
+                                <td>{{ utilisateur.etudiant.numero_etudiant }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Classe:</strong></td>
+                                <td>{{ utilisateur.etudiant.classe.nom }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Niveau:</strong></td>
+                                <td>{{ utilisateur.etudiant.classe.get_niveau_display }}</td>
+                            </tr>
+                        </table>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" onclick="editUser({{ utilisateur.id }})">
+                    <i class="fas fa-edit me-1"></i>Modifier
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<style>
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+
+.stats-card.success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.stats-card.warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stats-card.info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Sélection multiple
+function selectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const userCheckboxes = document.querySelectorAll('.user-checkbox');
+    
+    userCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+}
+
+// Actions en lot
+function bulkAction(action) {
+    const selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked'))
+                              .map(cb => cb.value);
+    
+    if (selectedUsers.length === 0) {
+        alert('Veuillez sélectionner au moins un utilisateur.');
+        return;
+    }
+    
+    if (confirm(`Êtes-vous sûr de vouloir ${action} ${selectedUsers.length} utilisateur(s) ?`)) {
+        // Implémenter l'action
+        console.log(`Action ${action} sur les utilisateurs:`, selectedUsers);
+    }
+}
+
+// Réinitialiser mot de passe
+function resetPassword(userId) {
+    if (confirm('Êtes-vous sûr de vouloir réinitialiser le mot de passe de cet utilisateur ?')) {
+        fetch(`/gestion-utilisateurs/${userId}/reinitialiser-mot-de-passe/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Mot de passe réinitialisé avec succès !');
+                location.reload();
+            } else {
+                alert('Erreur lors de la réinitialisation : ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erreur de connexion');
+            console.error('Error:', error);
+        });
+    }
+}
+
+// Activer/Désactiver utilisateur
+function toggleUser(userId) {
+    if (confirm('Êtes-vous sûr de vouloir changer le statut de cet utilisateur ?')) {
+        fetch(`/gestion-utilisateurs/${userId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Statut utilisateur modifié avec succès !');
+                location.reload();
+            } else {
+                alert('Erreur lors de la modification : ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erreur de connexion');
+            console.error('Error:', error);
+        });
+    }
+}
+
+// Modifier utilisateur
+function editUser(userId) {
+    // Rediriger vers la page de modification
+    window.location.href = `/gestion-utilisateurs/${userId}/modifier/`;
+}
+
+// Auto-submit pour les filtres
+document.getElementById('type').addEventListener('change', function() {
+    this.form.submit();
+});
+
+// Gestion des mots de passe
+function togglePassword(userId) {
+    const passwordField = document.getElementById(`password-${userId}`);
+    const eyeIcon = document.getElementById(`eye-${userId}`);
+    
+    if (passwordField.type === 'password') {
+        // Récupérer le vrai mot de passe via AJAX
+        fetch(`/gestion-utilisateurs/${userId}/get-password/`, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                passwordField.type = 'text';
+                passwordField.value = data.password;
+                eyeIcon.className = 'fas fa-eye-slash';
+            } else {
+                alert('Erreur lors de la récupération du mot de passe');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur de connexion');
+        });
+    } else {
+        passwordField.type = 'password';
+        passwordField.value = '********';
+        eyeIcon.className = 'fas fa-eye';
+    }
+}
+
+function editPassword(userId) {
+    const newPassword = prompt('Entrez le nouveau mot de passe (minimum 8 caractères):');
+    if (newPassword && newPassword.length >= 8) {
+        console.log(`Tentative de changement de mot de passe pour utilisateur ${userId}`);
+        console.log(`Nouveau mot de passe: ${newPassword}`);
+        
+        fetch(`/gestion-utilisateurs/${userId}/set-password/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'new_password': newPassword
+            })
+        })
+        .then(response => {
+            console.log('Réponse reçue:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Données reçues:', data);
+            if (data.success) {
+                let message = 'Mot de passe modifié avec succès !';
+                if (data.debug) {
+                    message += '\n\nDétails: ' + data.debug;
+                }
+                alert(message);
+                
+                // Réinitialiser l'affichage
+                const passwordField = document.getElementById(`password-${userId}`);
+                if (passwordField) {
+                    passwordField.type = 'password';
+                    passwordField.value = '********';
+                }
+                const eyeIcon = document.getElementById(`eye-${userId}`);
+                if (eyeIcon) {
+                    eyeIcon.className = 'fas fa-eye';
+                }
+                
+                // Recharger la page pour voir les changements
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                alert('Erreur lors de la modification :\n' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur complète:', error);
+            alert('Erreur de connexion: ' + error.message);
+        });
+    } else if (newPassword !== null) {
+        alert('Le mot de passe doit contenir au moins 8 caractères.');
+    }
+}
+</script>
+{% endblock %}

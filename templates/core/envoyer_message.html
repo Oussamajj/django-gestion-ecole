@@ -1,0 +1,461 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Envoyer un Message - EduManager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-paper-plane me-2"></i>
+        Envoyer un Message
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'messagerie' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Retour à la messagerie
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>
+                    Composer un message
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="messageForm">
+                    {% csrf_token %}
+                    
+                    <!-- Sujet -->
+                    <div class="mb-3">
+                        <label for="{{ form.sujet.id_for_label }}" class="form-label">
+                            <i class="fas fa-tag me-1"></i>Sujet *
+                        </label>
+                        {{ form.sujet }}
+                    </div>
+                    
+                    <!-- Destinataires -->
+                    <div class="mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-users me-2"></i>Destinataires
+                        </h6>
+                        <hr>
+                        
+                        {% if user.is_superuser %}
+                        <!-- Options pour admin -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.envoyer_a_tous_enseignants }}
+                                    <label class="form-check-label" for="{{ form.envoyer_a_tous_enseignants.id_for_label }}">
+                                        <i class="fas fa-chalkboard-teacher me-1"></i>
+                                        Envoyer à tous les enseignants
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.envoyer_a_tous_etudiants }}
+                                    <label class="form-check-label" for="{{ form.envoyer_a_tous_etudiants.id_for_label }}">
+                                        <i class="fas fa-graduation-cap me-1"></i>
+                                        Envoyer à tous les étudiants
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Conseil :</strong> Utilisez les options ci-dessus pour envoyer à tous, 
+                            ou sélectionnez des destinataires spécifiques ci-dessous.
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Sélection individuelle -->
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-user-friends me-1"></i>
+                                Destinataires spécifiques
+                            </label>
+                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                {% for choice in form.destinataires %}
+                                <div class="form-check">
+                                    {{ choice.tag }}
+                                    <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                        {{ choice.choice_label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted">
+                                Maintenez Ctrl (Cmd sur Mac) pour sélectionner plusieurs destinataires
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Contenu -->
+                    <div class="mb-3">
+                        <label for="{{ form.contenu.id_for_label }}" class="form-label">
+                            <i class="fas fa-align-left me-1"></i>Message *
+                        </label>
+                        {{ form.contenu }}
+                        <div class="form-text">
+                            Rédigez votre message. Soyez clair et concis.
+                        </div>
+                    </div>
+                    
+                    <!-- Options -->
+                    <div class="mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-cog me-2"></i>Options
+                        </h6>
+                        <hr>
+                        <div class="form-check">
+                            {{ form.important }}
+                            <label class="form-check-label" for="{{ form.important.id_for_label }}">
+                                <i class="fas fa-exclamation-circle text-danger me-1"></i>
+                                Marquer comme important
+                                <small class="text-muted d-block">
+                                    Les messages importants sont mis en évidence pour les destinataires
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Boutons -->
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary me-2" onclick="saveDraft()">
+                                <i class="fas fa-save me-1"></i>Sauvegarder le brouillon
+                            </button>
+                            <a href="{% url 'messagerie' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Annuler
+                            </a>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i>Envoyer le message
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Aide -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>Aide
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-lightbulb me-2"></i>Conseils</h6>
+                    <ul class="mb-0 small">
+                        <li>Utilisez un sujet clair et descriptif</li>
+                        <li>Soyez concis dans votre message</li>
+                        <li>Marquez comme important uniquement si nécessaire</li>
+                        <li>Vérifiez vos destinataires avant d'envoyer</li>
+                    </ul>
+                </div>
+                
+                {% if user.is_superuser %}
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-crown me-2"></i>Privilèges Admin</h6>
+                    <p class="mb-0 small">
+                        En tant qu'administrateur, vous pouvez envoyer des messages 
+                        à tous les utilisateurs du système.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Modèles de messages -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-clipboard me-2"></i>Modèles rapides
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="useTemplate('reunion')">
+                        <i class="fas fa-users me-1"></i>Convocation réunion
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="useTemplate('info')">
+                        <i class="fas fa-info-circle me-1"></i>Information générale
+                    </button>
+                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="useTemplate('rappel')">
+                        <i class="fas fa-bell me-1"></i>Rappel important
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="useTemplate('urgent')">
+                        <i class="fas fa-exclamation-triangle me-1"></i>Message urgent
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Modèles de messages
+const templates = {
+    reunion: {
+        sujet: 'Convocation - Réunion du [DATE]',
+        contenu: `Bonjour,
+
+Vous êtes convié(e) à une réunion qui se déroulera :
+
+📅 Date : [DATE]
+🕐 Heure : [HEURE]
+📍 Lieu : [LIEU]
+
+Ordre du jour :
+- [POINT 1]
+- [POINT 2]
+- [POINT 3]
+
+Merci de confirmer votre présence.
+
+Cordialement,
+[VOTRE NOM]`
+    },
+    info: {
+        sujet: 'Information - [SUJET]',
+        contenu: `Bonjour,
+
+Nous souhaitons vous informer de [INFORMATION].
+
+[DÉTAILS]
+
+Pour toute question, n'hésitez pas à nous contacter.
+
+Cordialement,
+[VOTRE NOM]`
+    },
+    rappel: {
+        sujet: 'Rappel - [SUJET]',
+        contenu: `Bonjour,
+
+Nous vous rappelons que [ÉVÉNEMENT/ÉCHÉANCE] aura lieu le [DATE].
+
+Merci de ne pas oublier :
+- [POINT 1]
+- [POINT 2]
+
+Cordialement,
+[VOTRE NOM]`
+    },
+    urgent: {
+        sujet: 'URGENT - [SUJET]',
+        contenu: `Bonjour,
+
+Message urgent concernant [SUJET].
+
+[DÉTAILS URGENTS]
+
+Merci de prendre les mesures nécessaires dans les plus brefs délais.
+
+Cordialement,
+[VOTRE NOM]`
+    }
+};
+
+// Utiliser un modèle
+function useTemplate(type) {
+    if (templates[type]) {
+        const template = templates[type];
+        
+        // Remplir les champs
+        document.getElementById('{{ form.sujet.id_for_label }}').value = template.sujet;
+        document.getElementById('{{ form.contenu.id_for_label }}').value = template.contenu;
+        
+        // Marquer comme important si c'est urgent
+        if (type === 'urgent') {
+            document.getElementById('{{ form.important.id_for_label }}').checked = true;
+        }
+        
+        // Faire défiler vers le haut
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+// Sauvegarder le brouillon
+function saveDraft() {
+    const sujet = document.getElementById('{{ form.sujet.id_for_label }}').value;
+    const contenu = document.getElementById('{{ form.contenu.id_for_label }}').value;
+    
+    if (sujet || contenu) {
+        // Sauvegarder dans le localStorage
+        const draft = {
+            sujet: sujet,
+            contenu: contenu,
+            timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem('message_draft', JSON.stringify(draft));
+        
+        // Afficher confirmation
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-1"></i>Sauvegardé !';
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 2000);
+    } else {
+        alert('Rien à sauvegarder. Veuillez saisir au moins un sujet ou un contenu.');
+    }
+}
+
+// Charger le brouillon au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    const draft = localStorage.getItem('message_draft');
+    if (draft) {
+        try {
+            const draftData = JSON.parse(draft);
+            const draftDate = new Date(draftData.timestamp);
+            const now = new Date();
+            const hoursDiff = (now - draftDate) / (1000 * 60 * 60);
+            
+            // Proposer de restaurer si le brouillon a moins de 24h
+            if (hoursDiff < 24) {
+                if (confirm(`Un brouillon a été trouvé (${draftDate.toLocaleString('fr-FR')}). Voulez-vous le restaurer ?`)) {
+                    document.getElementById('{{ form.sujet.id_for_label }}').value = draftData.sujet || '';
+                    document.getElementById('{{ form.contenu.id_for_label }}').value = draftData.contenu || '';
+                }
+            }
+        } catch (e) {
+            console.error('Erreur lors du chargement du brouillon:', e);
+        }
+    }
+    
+    // Gestion des options "Envoyer à tous"
+    const tousEnseignants = document.getElementById('{{ form.envoyer_a_tous_enseignants.id_for_label }}');
+    const tousEtudiants = document.getElementById('{{ form.envoyer_a_tous_etudiants.id_for_label }}');
+    const destinataires = document.querySelectorAll('input[name="{{ form.destinataires.name }}"]');
+    
+    if (tousEnseignants) {
+        tousEnseignants.addEventListener('change', function() {
+            if (this.checked) {
+                // Décocher "tous étudiants" et destinataires individuels
+                if (tousEtudiants) tousEtudiants.checked = false;
+                destinataires.forEach(cb => cb.checked = false);
+            }
+        });
+    }
+    
+    if (tousEtudiants) {
+        tousEtudiants.addEventListener('change', function() {
+            if (this.checked) {
+                // Décocher "tous enseignants" et destinataires individuels
+                if (tousEnseignants) tousEnseignants.checked = false;
+                destinataires.forEach(cb => cb.checked = false);
+            }
+        });
+    }
+    
+    // Si on sélectionne des destinataires individuels, décocher les options "tous"
+    destinataires.forEach(cb => {
+        cb.addEventListener('change', function() {
+            if (this.checked) {
+                if (tousEnseignants) tousEnseignants.checked = false;
+                if (tousEtudiants) tousEtudiants.checked = false;
+            }
+        });
+    });
+});
+
+// Validation avant envoi
+document.getElementById('messageForm').addEventListener('submit', function(e) {
+    const sujet = document.getElementById('{{ form.sujet.id_for_label }}').value.trim();
+    const contenu = document.getElementById('{{ form.contenu.id_for_label }}').value.trim();
+    
+    if (!sujet) {
+        e.preventDefault();
+        alert('Veuillez saisir un sujet pour votre message.');
+        document.getElementById('{{ form.sujet.id_for_label }}').focus();
+        return;
+    }
+    
+    if (!contenu) {
+        e.preventDefault();
+        alert('Veuillez saisir le contenu de votre message.');
+        document.getElementById('{{ form.contenu.id_for_label }}').focus();
+        return;
+    }
+    
+    // Vérifier qu'au moins un destinataire est sélectionné
+    const tousEnseignants = document.getElementById('{{ form.envoyer_a_tous_enseignants.id_for_label }}');
+    const tousEtudiants = document.getElementById('{{ form.envoyer_a_tous_etudiants.id_for_label }}');
+    const destinataires = document.querySelectorAll('input[name="{{ form.destinataires.name }}"]:checked');
+    
+    const hasDestinataires = (tousEnseignants && tousEnseignants.checked) || 
+                            (tousEtudiants && tousEtudiants.checked) || 
+                            destinataires.length > 0;
+    
+    if (!hasDestinataires) {
+        e.preventDefault();
+        alert('Veuillez sélectionner au moins un destinataire.');
+        return;
+    }
+    
+    // Confirmation pour messages importants
+    const important = document.getElementById('{{ form.important.id_for_label }}').checked;
+    if (important) {
+        if (!confirm('Ce message est marqué comme important. Êtes-vous sûr de vouloir l\'envoyer ?')) {
+            e.preventDefault();
+            return;
+        }
+    }
+    
+    // Afficher indicateur de chargement
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Envoi en cours...';
+    submitBtn.disabled = true;
+    
+    // Supprimer le brouillon après envoi réussi
+    localStorage.removeItem('message_draft');
+});
+
+// Compteur de caractères pour le contenu
+const contenuField = document.getElementById('{{ form.contenu.id_for_label }}');
+if (contenuField) {
+    const maxLength = 2000; // Limite recommandée
+    
+    // Créer l'indicateur de compteur
+    const counter = document.createElement('small');
+    counter.className = 'text-muted';
+    counter.style.float = 'right';
+    contenuField.parentNode.appendChild(counter);
+    
+    function updateCounter() {
+        const length = contenuField.value.length;
+        counter.textContent = `${length}/${maxLength} caractères`;
+        
+        if (length > maxLength * 0.9) {
+            counter.className = 'text-warning';
+        } else if (length > maxLength) {
+            counter.className = 'text-danger';
+        } else {
+            counter.className = 'text-muted';
+        }
+    }
+    
+    contenuField.addEventListener('input', updateCounter);
+    updateCounter(); // Initialiser
+}
+</script>
+{% endblock %}

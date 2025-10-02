@@ -1,0 +1,431 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Changer le Mot de Passe - EduManager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-key me-2"></i>
+        Changer le Mot de Passe
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Retour au tableau de bord
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Sécurité du compte
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if user.profil.mot_de_passe_temporaire %}
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Mot de passe temporaire</h6>
+                    <p class="mb-0">
+                        Vous utilisez actuellement un mot de passe temporaire. 
+                        Veuillez le changer pour sécuriser votre compte.
+                    </p>
+                </div>
+                {% endif %}
+                
+                <form method="post" id="passwordForm">
+                    {% csrf_token %}
+                    
+                    {% if not user.profil.mot_de_passe_temporaire %}
+                    <div class="mb-3">
+                        <label for="{{ form.ancien_mot_de_passe.id_for_label }}" class="form-label">
+                            <i class="fas fa-lock me-1"></i>Mot de passe actuel *
+                        </label>
+                        {{ form.ancien_mot_de_passe }}
+                        <div class="form-text">
+                            Saisissez votre mot de passe actuel pour confirmer votre identité.
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.nouveau_mot_de_passe.id_for_label }}" class="form-label">
+                            <i class="fas fa-key me-1"></i>Nouveau mot de passe *
+                        </label>
+                        {{ form.nouveau_mot_de_passe }}
+                        <div class="form-text">
+                            Le mot de passe doit contenir au moins 8 caractères.
+                        </div>
+                        <!-- Indicateur de force du mot de passe -->
+                        <div class="password-strength mt-2">
+                            <div class="progress" style="height: 5px;">
+                                <div class="progress-bar" id="strengthBar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small id="strengthText" class="text-muted">Saisissez un mot de passe</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.confirmer_mot_de_passe.id_for_label }}" class="form-label">
+                            <i class="fas fa-check-circle me-1"></i>Confirmer le nouveau mot de passe *
+                        </label>
+                        {{ form.confirmer_mot_de_passe }}
+                        <div class="form-text">
+                            Saisissez à nouveau votre nouveau mot de passe pour confirmation.
+                        </div>
+                        <!-- Indicateur de correspondance -->
+                        <div id="matchIndicator" class="mt-2" style="display: none;">
+                            <small id="matchText"></small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save me-1"></i>Changer le mot de passe
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <!-- Conseils de sécurité -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Conseils de sécurité
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-shield-alt me-2"></i>Mot de passe fort</h6>
+                    <ul class="mb-0 small">
+                        <li>Au moins 8 caractères</li>
+                        <li>Mélange de majuscules et minuscules</li>
+                        <li>Au moins un chiffre</li>
+                        <li>Au moins un caractère spécial (!@#$%^&*)</li>
+                        <li>Évitez les mots du dictionnaire</li>
+                        <li>N'utilisez pas d'informations personnelles</li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Bonnes pratiques</h6>
+                    <ul class="mb-0 small">
+                        <li>Ne partagez jamais votre mot de passe</li>
+                        <li>Utilisez un mot de passe unique pour chaque compte</li>
+                        <li>Changez votre mot de passe régulièrement</li>
+                        <li>Déconnectez-vous des ordinateurs partagés</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Historique des connexions récentes -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>Connexions récentes
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div>
+                            <strong>Connexion actuelle</strong><br>
+                            <small class="text-muted">
+                                <i class="fas fa-globe me-1"></i>{{ request.META.REMOTE_ADDR|default:"IP inconnue" }}
+                            </small>
+                        </div>
+                        <span class="badge bg-success">En cours</span>
+                    </div>
+                    
+                    {% if user.last_login %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div>
+                            <strong>Dernière connexion</strong><br>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>{{ user.last_login|date:"d/m/Y à H:i" }}
+                            </small>
+                        </div>
+                        <span class="badge bg-secondary">Terminée</span>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Connexions simulées pour l'exemple -->
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div>
+                            <strong>Connexion précédente</strong><br>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>Hier à 14:30
+                            </small>
+                        </div>
+                        <span class="badge bg-secondary">Terminée</span>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        Si vous remarquez une activité suspecte, changez immédiatement votre mot de passe.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const newPasswordField = document.getElementById('{{ form.nouveau_mot_de_passe.id_for_label }}');
+    const confirmPasswordField = document.getElementById('{{ form.confirmer_mot_de_passe.id_for_label }}');
+    const strengthBar = document.getElementById('strengthBar');
+    const strengthText = document.getElementById('strengthText');
+    const matchIndicator = document.getElementById('matchIndicator');
+    const matchText = document.getElementById('matchText');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Fonction pour évaluer la force du mot de passe
+    function checkPasswordStrength(password) {
+        let score = 0;
+        let feedback = [];
+        
+        // Longueur
+        if (password.length >= 8) {
+            score += 20;
+        } else {
+            feedback.push('Au moins 8 caractères');
+        }
+        
+        // Minuscules
+        if (/[a-z]/.test(password)) {
+            score += 20;
+        } else {
+            feedback.push('Une lettre minuscule');
+        }
+        
+        // Majuscules
+        if (/[A-Z]/.test(password)) {
+            score += 20;
+        } else {
+            feedback.push('Une lettre majuscule');
+        }
+        
+        // Chiffres
+        if (/\d/.test(password)) {
+            score += 20;
+        } else {
+            feedback.push('Un chiffre');
+        }
+        
+        // Caractères spéciaux
+        if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+            score += 20;
+        } else {
+            feedback.push('Un caractère spécial');
+        }
+        
+        return { score, feedback };
+    }
+    
+    // Mettre à jour l'indicateur de force
+    function updateStrengthIndicator(password) {
+        const { score, feedback } = checkPasswordStrength(password);
+        
+        strengthBar.style.width = score + '%';
+        
+        if (score < 40) {
+            strengthBar.className = 'progress-bar bg-danger';
+            strengthText.textContent = 'Faible - Manque: ' + feedback.join(', ');
+            strengthText.className = 'text-danger small';
+        } else if (score < 80) {
+            strengthBar.className = 'progress-bar bg-warning';
+            strengthText.textContent = 'Moyen - Manque: ' + feedback.join(', ');
+            strengthText.className = 'text-warning small';
+        } else {
+            strengthBar.className = 'progress-bar bg-success';
+            strengthText.textContent = 'Fort - Excellent mot de passe !';
+            strengthText.className = 'text-success small';
+        }
+    }
+    
+    // Vérifier la correspondance des mots de passe
+    function checkPasswordMatch() {
+        const newPassword = newPasswordField.value;
+        const confirmPassword = confirmPasswordField.value;
+        
+        if (confirmPassword.length > 0) {
+            matchIndicator.style.display = 'block';
+            
+            if (newPassword === confirmPassword) {
+                matchText.textContent = '✓ Les mots de passe correspondent';
+                matchText.className = 'text-success small';
+                return true;
+            } else {
+                matchText.textContent = '✗ Les mots de passe ne correspondent pas';
+                matchText.className = 'text-danger small';
+                return false;
+            }
+        } else {
+            matchIndicator.style.display = 'none';
+            return false;
+        }
+    }
+    
+    // Événements
+    newPasswordField.addEventListener('input', function() {
+        updateStrengthIndicator(this.value);
+        checkPasswordMatch();
+    });
+    
+    confirmPasswordField.addEventListener('input', function() {
+        checkPasswordMatch();
+    });
+    
+    // Validation du formulaire
+    document.getElementById('passwordForm').addEventListener('submit', function(e) {
+        const newPassword = newPasswordField.value;
+        const confirmPassword = confirmPasswordField.value;
+        
+        // Vérifier la force du mot de passe
+        const { score } = checkPasswordStrength(newPassword);
+        if (score < 60) {
+            e.preventDefault();
+            alert('Votre mot de passe n\'est pas assez fort. Veuillez suivre les recommandations de sécurité.');
+            newPasswordField.focus();
+            return;
+        }
+        
+        // Vérifier la correspondance
+        if (newPassword !== confirmPassword) {
+            e.preventDefault();
+            alert('Les mots de passe ne correspondent pas.');
+            confirmPasswordField.focus();
+            return;
+        }
+        
+        // Confirmation finale
+        if (!confirm('Êtes-vous sûr de vouloir changer votre mot de passe ?')) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Afficher l'indicateur de chargement
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Changement en cours...';
+        submitBtn.disabled = true;
+        
+        // Restaurer en cas d'erreur (sera géré par le serveur)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 10000);
+    });
+    
+    // Afficher/masquer le mot de passe
+    function togglePasswordVisibility(fieldId) {
+        const field = document.getElementById(fieldId);
+        const icon = document.querySelector(`[data-toggle="${fieldId}"] i`);
+        
+        if (field.type === 'password') {
+            field.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            field.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    }
+    
+    // Ajouter des boutons pour afficher/masquer les mots de passe
+    const passwordFields = [newPasswordField, confirmPasswordField];
+    const oldPasswordField = document.getElementById('{{ form.ancien_mot_de_passe.id_for_label }}');
+    if (oldPasswordField) {
+        passwordFields.unshift(oldPasswordField);
+    }
+    
+    passwordFields.forEach(field => {
+        if (field) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'input-group';
+            
+            field.parentNode.insertBefore(wrapper, field);
+            wrapper.appendChild(field);
+            
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'btn btn-outline-secondary';
+            toggleBtn.type = 'button';
+            toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
+            toggleBtn.setAttribute('data-toggle', field.id);
+            toggleBtn.onclick = () => togglePasswordVisibility(field.id);
+            
+            const btnGroup = document.createElement('div');
+            btnGroup.className = 'input-group-append';
+            btnGroup.appendChild(toggleBtn);
+            wrapper.appendChild(btnGroup);
+        }
+    });
+    
+    // Focus automatique sur le premier champ
+    if (oldPasswordField) {
+        oldPasswordField.focus();
+    } else {
+        newPasswordField.focus();
+    }
+});
+
+// Générateur de mot de passe (bonus)
+function generatePassword() {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+    
+    // Assurer qu'on a au moins un caractère de chaque type
+    password += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)]; // minuscule
+    password += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)]; // majuscule
+    password += "0123456789"[Math.floor(Math.random() * 10)]; // chiffre
+    password += "!@#$%^&*"[Math.floor(Math.random() * 8)]; // spécial
+    
+    // Compléter avec des caractères aléatoires
+    for (let i = password.length; i < length; i++) {
+        password += charset[Math.floor(Math.random() * charset.length)];
+    }
+    
+    // Mélanger les caractères
+    return password.split('').sort(() => Math.random() - 0.5).join('');
+}
+
+// Ajouter un bouton de génération automatique (optionnel)
+document.addEventListener('DOMContentLoaded', function() {
+    const newPasswordField = document.getElementById('{{ form.nouveau_mot_de_passe.id_for_label }}');
+    
+    if (newPasswordField) {
+        const generateBtn = document.createElement('button');
+        generateBtn.type = 'button';
+        generateBtn.className = 'btn btn-outline-info btn-sm mt-2';
+        generateBtn.innerHTML = '<i class="fas fa-magic me-1"></i>Générer un mot de passe fort';
+        generateBtn.onclick = function() {
+            const generatedPassword = generatePassword();
+            newPasswordField.value = generatedPassword;
+            document.getElementById('{{ form.confirmer_mot_de_passe.id_for_label }}').value = generatedPassword;
+            
+            // Déclencher les événements pour mettre à jour les indicateurs
+            newPasswordField.dispatchEvent(new Event('input'));
+            document.getElementById('{{ form.confirmer_mot_de_passe.id_for_label }}').dispatchEvent(new Event('input'));
+            
+            // Afficher le mot de passe généré temporairement
+            alert(`Mot de passe généré: ${generatedPassword}\n\nNotez-le bien, il ne sera plus affiché !`);
+        };
+        
+        newPasswordField.parentNode.appendChild(generateBtn);
+    }
+});
+</script>
+{% endblock %}

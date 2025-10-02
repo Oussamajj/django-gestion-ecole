@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Supprimer Note - EduManager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-trash me-2 text-danger"></i>
+        Supprimer Note
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'notes_list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirmation de suppression
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-warning me-2"></i>Attention !</h6>
+                    <p class="mb-0">
+                        Vous êtes sur le point de supprimer définitivement cette note. 
+                        Cette action est <strong>irréversible</strong> et affectera :
+                    </p>
+                    <ul class="mt-2 mb-0">
+                        <li>La moyenne de l'étudiant</li>
+                        <li>Les statistiques de la classe</li>
+                        <li>L'historique des évaluations</li>
+                    </ul>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <div class="{% if note.valeur >= 16 %}bg-success{% elif note.valeur >= 12 %}bg-info{% elif note.valeur >= 10 %}bg-warning{% else %}bg-danger{% endif %} text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" 
+                             style="width: 100px; height: 100px; font-size: 2rem;">
+                            {{ note.valeur }}/20
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <h5>Note à supprimer</h5>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Étudiant :</strong></td>
+                                <td>{{ note.etudiant.user.get_full_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Cours :</strong></td>
+                                <td>{{ note.cours.matiere.nom }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Enseignant :</strong></td>
+                                <td>{{ note.cours.enseignant.user.get_full_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Note :</strong></td>
+                                <td>{{ note.valeur }}/20</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Coefficient :</strong></td>
+                                <td>{{ note.coefficient }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Type :</strong></td>
+                                <td>{{ note.get_type_evaluation_display }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Date :</strong></td>
+                                <td>{{ note.date_evaluation|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% if note.commentaire %}
+                            <tr>
+                                <td><strong>Commentaire :</strong></td>
+                                <td>{{ note.commentaire }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+                
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'notes_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-1"></i>Supprimer définitivement
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

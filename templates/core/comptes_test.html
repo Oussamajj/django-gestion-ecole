@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+
+{% block title %}Comptes de Test - EduManager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-users me-2"></i>
+        Comptes de Test
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="copyAllPasswords()">
+                <i class="fas fa-copy me-1"></i>Copier tous
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-warning" onclick="reinitialiserTousMDP()">
+                <i class="fas fa-sync me-1"></i>Réinitialiser tous
+            </button>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" onclick="window.location.reload()">
+            <i class="fas fa-refresh me-1"></i>Actualiser
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Admin -->
+    <div class="col-md-4 mb-4">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-crown me-2"></i>Administrateur
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="account-info">
+                    <div class="mb-2">
+                        <strong>Nom d'utilisateur:</strong> admin
+                    </div>
+                    <div class="mb-2">
+                        <strong>Mot de passe:</strong> 
+                        <code class="password-field">admin123</code>
+                        <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyPassword('admin123')">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Privilèges:</strong> Accès complet
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enseignants -->
+    <div class="col-md-4 mb-4">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-chalkboard-teacher me-2"></i>Enseignants
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for enseignant in enseignants %}
+                <div class="account-info mb-3 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+                    <div class="mb-1">
+                        <strong>{{ enseignant.user.first_name }} {{ enseignant.user.last_name }}</strong>
+                    </div>
+                    <div class="mb-1">
+                        <small><strong>Login:</strong> {{ enseignant.user.username }}</small>
+                    </div>
+                    <div class="mb-1">
+                        <small><strong>Mot de passe:</strong> 
+                            <code class="password-field" id="password-ens-{{ enseignant.user.id }}">password123</code>
+                            <div class="btn-group btn-group-sm ms-1">
+                                <button class="btn btn-outline-secondary" onclick="copyPassword('password123')" title="Copier">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="btn btn-outline-warning" onclick="reinitialiserMDP({{ enseignant.user.id }}, 'ens')" title="Réinitialiser">
+                                    <i class="fas fa-sync"></i>
+                                </button>
+                                <button class="btn btn-outline-info" onclick="genererMDPAleatoire({{ enseignant.user.id }}, 'ens')" title="Générer aléatoire">
+                                    <i class="fas fa-random"></i>
+                                </button>
+                            </div>
+                        </small>
+                    </div>
+                    <div class="mb-1">
+                        <small><strong>Département:</strong> {{ enseignant.departement.nom }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Étudiants -->
+    <div class="col-md-4 mb-4">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-graduation-cap me-2"></i>Étudiants
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for etudiant in etudiants %}
+                <div class="account-info mb-3 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+                    <div class="mb-1">
+                        <strong>{{ etudiant.user.first_name }} {{ etudiant.user.last_name }}</strong>
+                    </div>
+                    <div class="mb-1">
+                        <small><strong>Login:</strong> {{ etudiant.user.username }}</small>
+                    </div>
+                    <div class="mb-1">
+                        <small><strong>Mot de passe:</strong> 
+                            <code class="password-field" id="password-etu-{{ etudiant.user.id }}">password123</code>
+                            <div class="btn-group btn-group-sm ms-1">
+                                <button class="btn btn-outline-secondary" onclick="copyPassword('password123')" title="Copier">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="btn btn-outline-warning" onclick="reinitialiserMDP({{ etudiant.user.id }}, 'etu')" title="Réinitialiser">
+                                    <i class="fas fa-sync"></i>
+                                </button>
+                                <button class="btn btn-outline-info" onclick="genererMDPAleatoire({{ etudiant.user.id }}, 'etu')" title="Générer aléatoire">
+                                    <i class="fas fa-random"></i>
+                                </button>
+                            </div>
+                        </small>
+                    </div>
+                    <div class="mb-1">
+                        <small><strong>Classe:</strong> {{ etudiant.classe.nom }}</small>
+                    </div>
+                    <div class="mb-1">
+                        <small><strong>N° Étudiant:</strong> {{ etudiant.numero_etudiant }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions rapides -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>Actions Rapides
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Gestion des Mots de Passe</h6>
+                        <p class="text-muted">Commandes Django pour gérer les comptes :</p>
+                        <div class="bg-light p-3 rounded">
+                            <code>python manage.py reset_passwords</code><br>
+                            <small class="text-muted">Réinitialise tous les mots de passe à "password123"</small>
+                        </div>
+                        <div class="bg-light p-3 rounded mt-2">
+                            <code>python manage.py create_sample_data</code><br>
+                            <small class="text-muted">Crée de nouveaux comptes de test</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Informations Importantes</h6>
+                        <div class="alert alert-info">
+                            <ul class="mb-0">
+                                <li>Tous les comptes utilisent le mot de passe <strong>password123</strong></li>
+                                <li>L'admin utilise <strong>admin123</strong></li>
+                                <li>Les enseignants ont accès aux fonctions de gestion</li>
+                                <li>Les étudiants ont un accès limité</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.password-field {
+    background-color: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+}
+
+.account-info {
+    font-size: 0.9rem;
+}
+
+.card-header h5 {
+    font-weight: 600;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyPassword(password) {
+    navigator.clipboard.writeText(password).then(function() {
+        // Afficher une notification temporaire
+        const btn = event.target.closest('button');
+        const originalIcon = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check text-success"></i>';
+        
+        setTimeout(() => {
+            btn.innerHTML = originalIcon;
+        }, 1000);
+    }).catch(function(err) {
+        console.error('Erreur lors de la copie: ', err);
+        alert('Mot de passe: ' + password);
+    });
+}
+
+function copyAllPasswords() {
+    const passwords = `Comptes de Test - EduManager
+
+Admin:
+- Nom d'utilisateur: admin
+- Mot de passe: admin123
+
+Enseignants:
+{% for enseignant in enseignants %}- {{ enseignant.user.username }} / password123
+{% endfor %}
+
+Étudiants:
+{% for etudiant in etudiants %}- {{ etudiant.user.username }} / password123
+{% endfor %}`;
+
+    navigator.clipboard.writeText(passwords).then(function() {
+        alert('Tous les comptes ont été copiés dans le presse-papiers !');
+    }).catch(function(err) {
+        console.error('Erreur lors de la copie: ', err);
+    });
+}
+
+// Réinitialiser le mot de passe d'un utilisateur spécifique
+function reinitialiserMDP(userId, type) {
+    if (!confirm('Êtes-vous sûr de vouloir réinitialiser ce mot de passe à "password123" ?')) {
+        return;
+    }
+    
+    fetch(`/reinitialiser-mot-de-passe/${userId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mettre à jour l'affichage du mot de passe
+            const passwordElement = document.getElementById(`password-${type}-${userId}`);
+            if (passwordElement) {
+                passwordElement.textContent = data.nouveau_mot_de_passe;
+            }
+            
+            // Afficher un message de succès
+            showNotification('Mot de passe réinitialisé avec succès !', 'success');
+        } else {
+            showNotification('Erreur: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la réinitialisation', 'error');
+    });
+}
+
+// Générer un mot de passe aléatoire
+function genererMDPAleatoire(userId, type) {
+    if (!confirm('Générer un nouveau mot de passe aléatoire pour cet utilisateur ?')) {
+        return;
+    }
+    
+    fetch(`/generer-mot-de-passe/${userId}/`, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mettre à jour l'affichage du mot de passe
+            const passwordElement = document.getElementById(`password-${type}-${userId}`);
+            if (passwordElement) {
+                passwordElement.textContent = data.nouveau_mot_de_passe;
+            }
+            
+            // Copier automatiquement le nouveau mot de passe
+            copyPassword(data.nouveau_mot_de_passe);
+            showNotification('Nouveau mot de passe généré et copié !', 'success');
+        } else {
+            showNotification('Erreur: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la génération', 'error');
+    });
+}
+
+// Réinitialiser tous les mots de passe
+function reinitialiserTousMDP() {
+    if (!confirm('Êtes-vous sûr de vouloir réinitialiser TOUS les mots de passe à "password123" ?\n\nCela affectera tous les enseignants et étudiants.')) {
+        return;
+    }
+    
+    fetch('/reinitialiser-tous-mots-de-passe/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Recharger la page pour afficher les changements
+            showNotification(data.message, 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            showNotification('Erreur: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la réinitialisation', 'error');
+    });
+}
+
+// Afficher une notification
+function showNotification(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Supprimer automatiquement après 5 secondes
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
+}
+
+// Ajouter le token CSRF au début de la page
+document.addEventListener('DOMContentLoaded', function() {
+    // Ajouter un champ CSRF caché si il n'existe pas
+    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = '{{ csrf_token }}';
+        document.body.appendChild(csrfToken);
+    }
+});
+</script>
+{% endblock %}

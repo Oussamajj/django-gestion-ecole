@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+
+{% block title %}Emploi du Temps - EduManager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-calendar-alt me-2 text-primary"></i>
+        Emploi du Temps
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        {% if user.is_superuser or user.enseignant %}
+        <a href="{% url 'ajouter_emploi_du_temps' %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i>Ajouter un Créneau
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="classe" class="form-label">
+                    <i class="fas fa-users me-1"></i>Classe
+                </label>
+                <select name="classe" id="classe" class="form-select">
+                    <option value="">Toutes les classes</option>
+                    {% for classe in classes %}
+                    <option value="{{ classe.id }}" {% if request.GET.classe == classe.id|stringformat:"s" %}selected{% endif %}>
+                        {{ classe.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="enseignant" class="form-label">
+                    <i class="fas fa-chalkboard-teacher me-1"></i>Enseignant
+                </label>
+                <select name="enseignant" id="enseignant" class="form-select">
+                    <option value="">Tous les enseignants</option>
+                    {% for enseignant in enseignants %}
+                    <option value="{{ enseignant.id }}" {% if request.GET.enseignant == enseignant.id|stringformat:"s" %}selected{% endif %}>
+                        {{ enseignant.user.get_full_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="jour" class="form-label">
+                    <i class="fas fa-calendar-day me-1"></i>Jour
+                </label>
+                <select name="jour" id="jour" class="form-select">
+                    <option value="">Tous les jours</option>
+                    {% for jour_value, jour_label in jours %}
+                    <option value="{{ jour_value }}" {% if request.GET.jour == jour_value %}selected{% endif %}>
+                        {{ jour_label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search me-1"></i>Filtrer
+                </button>
+                <a href="{% url 'emploi_du_temps_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Vue en grille par jour -->
+<div class="row">
+    {% for jour_value, jour_label in jours %}
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-day me-2"></i>{{ jour_label }}
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% for emploi in emplois %}
+                    {% if emploi.jour == jour_value %}
+                    <div class="border-bottom p-3 emploi-item" data-type="{{ emploi.type_cours }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    {% if emploi.type_cours == 'cours' %}
+                                        <i class="fas fa-book text-primary me-2"></i>
+                                    {% elif emploi.type_cours == 'td' %}
+                                        <i class="fas fa-users text-success me-2"></i>
+                                    {% elif emploi.type_cours == 'tp' %}
+                                        <i class="fas fa-laptop-code text-warning me-2"></i>
+                                    {% elif emploi.type_cours == 'examen' %}
+                                        <i class="fas fa-clipboard-check text-danger me-2"></i>
+                                    {% else %}
+                                        <i class="fas fa-clock text-info me-2"></i>
+                                    {% endif %}
+                                    <strong class="text-primary">{{ emploi.cours.matiere.nom }}</strong>
+                                </div>
+                                
+                                <div class="small text-muted mb-1">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ emploi.heure_debut }} - {{ emploi.heure_fin }}
+                                </div>
+                                
+                                <div class="small text-muted mb-1">
+                                    <i class="fas fa-chalkboard-teacher me-1"></i>
+                                    {{ emploi.cours.enseignant.user.get_full_name }}
+                                </div>
+                                
+                                <div class="small text-muted mb-1">
+                                    <i class="fas fa-users me-1"></i>
+                                    {{ emploi.cours.classe.nom }}
+                                </div>
+                                
+                                {% if emploi.salle %}
+                                <div class="small text-muted mb-1">
+                                    <i class="fas fa-door-open me-1"></i>
+                                    Salle {{ emploi.salle }}
+                                </div>
+                                {% endif %}
+                                
+                                <span class="badge badge-type-{{ emploi.type_cours }} mt-1">
+                                    {{ emploi.get_type_cours_display }}
+                                </span>
+                            </div>
+                            
+                            {% if user.is_superuser or user.enseignant == emploi.cours.enseignant %}
+                            <div class="btn-group-vertical ms-2">
+                                <a href="{% url 'modifier_emploi_du_temps' emploi.pk %}" 
+                                   class="btn btn-sm btn-outline-secondary" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'supprimer_emploi_du_temps' emploi.pk %}" 
+                                   class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% empty %}
+                    {% if forloop.parentloop.first %}
+                    <div class="p-3 text-center text-muted">
+                        <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                        <p>Aucun cours programmé pour ce jour</p>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if not emplois %}
+                <div class="p-3 text-center text-muted">
+                    <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                    <p>Aucun cours programmé</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Vue tableau détaillée -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-table me-2"></i>Vue Détaillée
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-calendar-day me-1"></i>Jour</th>
+                        <th><i class="fas fa-clock me-1"></i>Horaires</th>
+                        <th><i class="fas fa-book me-1"></i>Matière</th>
+                        <th><i class="fas fa-chalkboard-teacher me-1"></i>Enseignant</th>
+                        <th><i class="fas fa-users me-1"></i>Classe</th>
+                        <th><i class="fas fa-door-open me-1"></i>Salle</th>
+                        <th><i class="fas fa-tag me-1"></i>Type</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emploi in emplois %}
+                    <tr>
+                        <td>
+                            <strong class="text-primary">{{ emploi.get_jour_display }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">
+                                {{ emploi.heure_debut }} - {{ emploi.heure_fin }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if emploi.type_cours == 'cours' %}
+                                    <i class="fas fa-book text-primary me-2"></i>
+                                {% elif emploi.type_cours == 'td' %}
+                                    <i class="fas fa-users text-success me-2"></i>
+                                {% elif emploi.type_cours == 'tp' %}
+                                    <i class="fas fa-laptop-code text-warning me-2"></i>
+                                {% elif emploi.type_cours == 'examen' %}
+                                    <i class="fas fa-clipboard-check text-danger me-2"></i>
+                                {% endif %}
+                                {{ emploi.cours.matiere.nom }}
+                            </div>
+                        </td>
+                        <td>{{ emploi.cours.enseignant.user.get_full_name }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ emploi.cours.classe.nom }}</span>
+                        </td>
+                        <td>
+                            {% if emploi.salle %}
+                                <span class="badge bg-secondary">{{ emploi.salle }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-type-{{ emploi.type_cours }}">
+                                {{ emploi.get_type_cours_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if user.is_superuser or user.enseignant == emploi.cours.enseignant %}
+                            <div class="btn-group">
+                                <a href="{% url 'modifier_emploi_du_temps' emploi.pk %}" 
+                                   class="btn btn-sm btn-outline-secondary" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'supprimer_emploi_du_temps' emploi.pk %}" 
+                                   class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                            <br>Aucun emploi du temps trouvé
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.emploi-item {
+    transition: all 0.3s ease;
+}
+
+.emploi-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.badge-type-cours {
+    background-color: #007bff;
+}
+
+.badge-type-td {
+    background-color: #28a745;
+}
+
+.badge-type-tp {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-type-examen {
+    background-color: #dc3545;
+}
+
+.badge-type-autre {
+    background-color: #6c757d;
+}
+
+.card-header.bg-primary {
+    background: linear-gradient(135deg, #007bff, #0056b3) !important;
+}
+
+.btn-group-vertical .btn {
+    margin-bottom: 2px;
+}
+</style>
+
+<script>
+// Auto-submit pour les filtres
+document.addEventListener('DOMContentLoaded', function() {
+    const filters = ['classe', 'enseignant', 'jour'];
+    filters.forEach(function(filterId) {
+        const element = document.getElementById(filterId);
+        if (element) {
+            element.addEventListener('change', function() {
+                this.form.submit();
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

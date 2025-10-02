@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block title %}Modifier Utilisateur - EduManager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-user-edit me-2"></i>
+        Modifier Utilisateur
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'gestion_utilisateurs' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>
+                    Informations de {{ user_obj.get_full_name }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="first_name" class="form-label">Prénom *</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" 
+                                   value="{{ user_obj.first_name }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="last_name" class="form-label">Nom *</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" 
+                                   value="{{ user_obj.last_name }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="{{ user_obj.email }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label">Nom d'utilisateur</label>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   value="{{ user_obj.username }}" readonly>
+                            <small class="text-muted">Le nom d'utilisateur ne peut pas être modifié</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="telephone" class="form-label">Téléphone</label>
+                            <input type="tel" class="form-control" id="telephone" name="telephone" 
+                                   value="{% if user_obj.profil %}{{ user_obj.profil.telephone }}{% endif %}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                       {% if user_obj.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="is_active">
+                                    Compte actif
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'gestion_utilisateurs' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Enregistrer les modifications
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Informations du compte
+                </h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>Type :</strong></td>
+                        <td>
+                            {% if user_obj.is_superuser %}
+                                <span class="badge bg-danger">Administrateur</span>
+                            {% elif user_obj.enseignant %}
+                                <span class="badge bg-info">Enseignant</span>
+                            {% elif user_obj.etudiant %}
+                                <span class="badge bg-success">Étudiant</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Autre</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Créé le :</strong></td>
+                        <td>{{ user_obj.date_joined|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dernière connexion :</strong></td>
+                        <td>{{ user_obj.last_login|date:"d/m/Y H:i"|default:"Jamais" }}</td>
+                    </tr>
+                    {% if user_obj.profil %}
+                    <tr>
+                        <td><strong>Connexions :</strong></td>
+                        <td>{{ user_obj.profil.nombre_connexions }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>Actions rapides
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-warning btn-sm" 
+                            onclick="resetPassword({{ user_obj.id }})">
+                        <i class="fas fa-key me-1"></i>Réinitialiser mot de passe
+                    </button>
+                    
+                    {% if not user_obj.is_superuser %}
+                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                            onclick="toggleUser({{ user_obj.id }})">
+                        <i class="fas fa-ban me-1"></i>
+                        {% if user_obj.is_active %}Désactiver{% else %}Activer{% endif %} le compte
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Réinitialiser mot de passe
+function resetPassword(userId) {
+    if (confirm('Êtes-vous sûr de vouloir réinitialiser le mot de passe de cet utilisateur ?')) {
+        fetch(`/gestion-utilisateurs/${userId}/reinitialiser-mot-de-passe/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Mot de passe réinitialisé avec succès !\n\n' + data.message);
+            } else {
+                alert('Erreur lors de la réinitialisation : ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erreur de connexion');
+            console.error('Error:', error);
+        });
+    }
+}
+
+// Activer/Désactiver utilisateur
+function toggleUser(userId) {
+    if (confirm('Êtes-vous sûr de vouloir changer le statut de cet utilisateur ?')) {
+        fetch(`/gestion-utilisateurs/${userId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Statut utilisateur modifié avec succès !');
+                location.reload();
+            } else {
+                alert('Erreur lors de la modification : ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erreur de connexion');
+            console.error('Error:', error);
+        });
+    }
+}
+</script>
+{% endblock %}

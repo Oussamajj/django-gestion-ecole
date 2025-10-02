@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Créer un Utilisateur - EduManager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-user-plus me-2"></i>
+        Créer un Nouvel Utilisateur
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'gestion_utilisateurs' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-circle me-2"></i>
+                    Informations du nouvel utilisateur
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="createUserForm">
+                    {% csrf_token %}
+                    
+                    <!-- Informations personnelles -->
+                    <div class="mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-user me-2"></i>Informations personnelles
+                        </h6>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">Prénom *</label>
+                                {{ form.first_name }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">Nom *</label>
+                                {{ form.last_name }}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">Email *</label>
+                                {{ form.email }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.type_utilisateur.id_for_label }}" class="form-label">Type d'utilisateur *</label>
+                                {{ form.type_utilisateur }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Informations complémentaires -->
+                    <div class="mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-info-circle me-2"></i>Informations complémentaires
+                        </h6>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.telephone.id_for_label }}" class="form-label">Téléphone</label>
+                                {{ form.telephone }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.date_naissance.id_for_label }}" class="form-label">Date de naissance</label>
+                                {{ form.date_naissance }}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ form.adresse.id_for_label }}" class="form-label">Adresse</label>
+                            {{ form.adresse }}
+                        </div>
+                    </div>
+                    
+                    <!-- Champs spécifiques étudiant -->
+                    <div id="etudiant-fields" style="display: none;" class="mb-4">
+                        <h6 class="text-success">
+                            <i class="fas fa-graduation-cap me-2"></i>Informations étudiant
+                        </h6>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.numero_etudiant.id_for_label }}" class="form-label">
+                                    Numéro étudiant
+                                    <small class="text-muted">(généré automatiquement si vide)</small>
+                                </label>
+                                {{ form.numero_etudiant }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.classe.id_for_label }}" class="form-label">Classe *</label>
+                                {{ form.classe }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Champs spécifiques enseignant -->
+                    <div id="enseignant-fields" style="display: none;" class="mb-4">
+                        <h6 class="text-info">
+                            <i class="fas fa-chalkboard-teacher me-2"></i>Informations enseignant
+                        </h6>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.departement.id_for_label }}" class="form-label">Département *</label>
+                                {{ form.departement }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.date_embauche.id_for_label }}" class="form-label">Date d'embauche</label>
+                                {{ form.date_embauche }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Options d'envoi -->
+                    <div class="mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-envelope me-2"></i>Notification
+                        </h6>
+                        <hr>
+                        <div class="form-check">
+                            {{ form.envoyer_email }}
+                            <label class="form-check-label" for="{{ form.envoyer_email.id_for_label }}">
+                                Envoyer les identifiants de connexion par email
+                                <small class="text-muted d-block">
+                                    L'utilisateur recevra ses identifiants et mot de passe temporaire par email
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'gestion_utilisateurs' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-1"></i>Créer le compte
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Aide et informations -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Informations importantes
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-key me-2"></i>Génération automatique</h6>
+                    <ul class="mb-0">
+                        <li><strong>Identifiant :</strong> Généré automatiquement à partir du prénom et nom</li>
+                        <li><strong>Mot de passe :</strong> Généré aléatoirement (8 caractères)</li>
+                        <li><strong>Numéro étudiant :</strong> Généré si non spécifié (format: ET001, ET002...)</li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Sécurité</h6>
+                    <p class="mb-0">
+                        L'utilisateur devra changer son mot de passe lors de sa première connexion.
+                    </p>
+                </div>
+                
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-envelope me-2"></i>Notification</h6>
+                    <p class="mb-0">
+                        Si l'email est activé, l'utilisateur recevra automatiquement ses identifiants.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistiques rapides -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Statistiques
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-12 mb-3">
+                        <h4 class="text-primary mb-0">125</h4>
+                        <small class="text-muted">Total utilisateurs</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h5 class="text-info mb-0">45</h5>
+                        <small class="text-muted">Enseignants</small>
+                    </div>
+                    <div class="col-4">
+                        <h5 class="text-success mb-0">78</h5>
+                        <small class="text-muted">Étudiants</small>
+                    </div>
+                    <div class="col-4">
+                        <h5 class="text-danger mb-0">2</h5>
+                        <small class="text-muted">Admins</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('{{ form.type_utilisateur.id_for_label }}');
+    const etudiantFields = document.getElementById('etudiant-fields');
+    const enseignantFields = document.getElementById('enseignant-fields');
+    
+    // Fonction pour afficher/masquer les champs selon le type
+    function toggleFields() {
+        const selectedType = typeSelect.value;
+        
+        if (selectedType === 'etudiant') {
+            etudiantFields.style.display = 'block';
+            enseignantFields.style.display = 'none';
+            
+            // Rendre les champs étudiant requis
+            document.getElementById('{{ form.classe.id_for_label }}').required = true;
+            document.getElementById('{{ form.departement.id_for_label }}').required = false;
+        } else if (selectedType === 'enseignant') {
+            etudiantFields.style.display = 'none';
+            enseignantFields.style.display = 'block';
+            
+            // Rendre les champs enseignant requis
+            document.getElementById('{{ form.departement.id_for_label }}').required = true;
+            document.getElementById('{{ form.classe.id_for_label }}').required = false;
+        } else {
+            etudiantFields.style.display = 'none';
+            enseignantFields.style.display = 'none';
+            
+            // Aucun champ spécifique requis
+            document.getElementById('{{ form.classe.id_for_label }}').required = false;
+            document.getElementById('{{ form.departement.id_for_label }}').required = false;
+        }
+    }
+    
+    // Écouter les changements de type
+    typeSelect.addEventListener('change', toggleFields);
+    
+    // Initialiser l'affichage
+    toggleFields();
+    
+    // Validation du formulaire
+    document.getElementById('createUserForm').addEventListener('submit', function(e) {
+        const selectedType = typeSelect.value;
+        
+        if (selectedType === 'etudiant') {
+            const classe = document.getElementById('{{ form.classe.id_for_label }}').value;
+            if (!classe) {
+                e.preventDefault();
+                alert('Veuillez sélectionner une classe pour l\'étudiant.');
+                return;
+            }
+        } else if (selectedType === 'enseignant') {
+            const departement = document.getElementById('{{ form.departement.id_for_label }}').value;
+            if (!departement) {
+                e.preventDefault();
+                alert('Veuillez sélectionner un département pour l\'enseignant.');
+                return;
+            }
+        }
+        
+        // Afficher un indicateur de chargement
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Création en cours...';
+        submitBtn.disabled = true;
+        
+        // En cas d'erreur, restaurer le bouton (sera géré par le serveur)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 10000);
+    });
+    
+    // Génération automatique du numéro étudiant
+    const numeroEtudiantField = document.getElementById('{{ form.numero_etudiant.id_for_label }}');
+    if (numeroEtudiantField) {
+        numeroEtudiantField.placeholder = 'Généré automatiquement (ex: ET001)';
+    }
+    
+    // Définir la date d'embauche par défaut à aujourd'hui
+    const dateEmbaucheField = document.getElementById('{{ form.date_embauche.id_for_label }}');
+    if (dateEmbaucheField && !dateEmbaucheField.value) {
+        dateEmbaucheField.valueAsDate = new Date();
+    }
+});
+</script>
+{% endblock %}

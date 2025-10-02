@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Tableau de bord - Gestion Scolaire{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tachometer-alt me-2"></i>
+        Tableau de bord
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>Exporter
+            </button>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary">
+            <i class="fas fa-calendar me-1"></i>Cette semaine
+        </button>
+    </div>
+</div>
+
+<!-- Statistiques principales -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Total Étudiants</div>
+                    <div class="h3 mb-0 font-weight-bold">{{ total_etudiants }}</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Total Enseignants</div>
+                    <div class="h3 mb-0 font-weight-bold">{{ total_enseignants }}</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Total Cours</div>
+                    <div class="h3 mb-0 font-weight-bold">{{ total_cours }}</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-book"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card info">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Total Classes</div>
+                    <div class="h3 mb-0 font-weight-bold">{{ total_classes }}</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Contenu spécifique selon le type d'utilisateur -->
+    {% if user_type == 'etudiant' %}
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-book me-2"></i>Mes Cours
+            </div>
+            <div class="card-body">
+                {% if mes_cours %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Matière</th>
+                                    <th>Enseignant</th>
+                                    <th>Crédits</th>
+                                    <th>Semestre</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cours in mes_cours %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ cours.matiere.nom }}</strong><br>
+                                        <small class="text-muted">{{ cours.matiere.code }}</small>
+                                    </td>
+                                    <td>{{ cours.enseignant.nom_complet }}</td>
+                                    <td><span class="badge bg-primary">{{ cours.matiere.credits }}</span></td>
+                                    <td><span class="badge bg-info">{{ cours.get_semestre_display }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Aucun cours assigné.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chart-line me-2"></i>Mes Dernières Notes
+            </div>
+            <div class="card-body">
+                {% if mes_notes %}
+                    {% for note in mes_notes %}
+                    <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded" style="background-color: #f8f9fa;">
+                        <div>
+                            <strong>{{ note.cours.matiere.nom }}</strong><br>
+                            <small class="text-muted">{{ note.get_type_evaluation_display }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="h5 mb-0 {% if note.note >= 10 %}text-success{% else %}text-danger{% endif %}">
+                                {{ note.note }}/20
+                            </span><br>
+                            <small class="text-muted">{{ note.date_evaluation }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">Aucune note disponible.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    {% elif user_type == 'enseignant' %}
+    <div class="col-lg-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chalkboard-teacher me-2"></i>Mes Cours
+            </div>
+            <div class="card-body">
+                {% if mes_cours %}
+                    <div class="row">
+                        {% for cours in mes_cours %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border-start border-primary border-4">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ cours.matiere.nom }}</h6>
+                                    <p class="card-text">
+                                        <small class="text-muted">{{ cours.classe.nom }}</small><br>
+                                        <span class="badge bg-info">{{ cours.get_semestre_display }}</span>
+                                        <span class="badge bg-secondary">{{ cours.annee_scolaire }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">Aucun cours assigné.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- Vue Admin -->
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-2"></i>Répartition par Niveau
+            </div>
+            <div class="card-body">
+                <canvas id="niveauChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i>Activité Récente
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Nouvel étudiant inscrit</h6>
+                            <p class="mb-0 text-muted">Il y a 2 heures</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Notes saisies - Mathématiques L1</h6>
+                            <p class="mb-0 text-muted">Il y a 4 heures</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-warning"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Emploi du temps modifié</h6>
+                            <p class="mb-0 text-muted">Hier</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Emploi du temps de la semaine -->
+{% if emploi_du_temps %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calendar-alt me-2"></i>Emploi du temps de la semaine
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Heure</th>
+                                <th>Lundi</th>
+                                <th>Mardi</th>
+                                <th>Mercredi</th>
+                                <th>Jeudi</th>
+                                <th>Vendredi</th>
+                                <th>Samedi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% with heures="08:00,09:00,10:00,11:00,12:00,13:00,14:00,15:00,16:00,17:00"|split:"," %}
+                            {% for heure in heures %}
+                            <tr>
+                                <td class="fw-bold">{{ heure }}</td>
+                                {% with jours="LUNDI,MARDI,MERCREDI,JEUDI,VENDREDI,SAMEDI"|split:"," %}
+                                {% for jour in jours %}
+                                <td>
+                                    {% for emploi in emploi_du_temps %}
+                                        {% if emploi.jour == jour and emploi.heure_debut|time:"H:i" == heure %}
+                                            <div class="p-2 rounded text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                <strong>{{ emploi.cours.matiere.nom }}</strong><br>
+                                                <small>{{ emploi.cours.enseignant.nom_complet }}</small><br>
+                                                <small>{{ emploi.salle }}</small>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                {% endfor %}
+                                {% endwith %}
+                            </tr>
+                            {% endfor %}
+                            {% endwith %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -35px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: -30px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Graphique pour la répartition par niveau (admin uniquement)
+{% if user_type == 'admin' %}
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('niveauChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['L1', 'L2', 'L3', 'M1', 'M2'],
+                datasets: [{
+                    data: [30, 25, 20, 15, 10],
+                    backgroundColor: [
+                        '#667eea',
+                        '#764ba2',
+                        '#f093fb',
+                        '#f5576c',
+                        '#4facfe'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

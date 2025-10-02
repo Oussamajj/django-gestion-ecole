@@ -1,0 +1,464 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Gestion des Notes - Gestion Scolaire{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-chart-line me-2"></i>
+        Gestion des Notes
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>Exporter
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-info">
+                <i class="fas fa-chart-bar me-1"></i>Statistiques
+            </button>
+        </div>
+        <a href="{% url 'ajouter_note' %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i>Nouvelle Note
+        </a>
+    </div>
+</div>
+
+<!-- Filtres et recherche -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="etudiant" class="form-label">Étudiant</label>
+                <select class="form-select" id="etudiant" name="etudiant">
+                    <option value="">Tous les étudiants</option>
+                    {% for etudiant in etudiants %}
+                        <option value="{{ etudiant.id }}" {% if etudiant.id|stringformat:"s" == etudiant_id %}selected{% endif %}>
+                            {{ etudiant.nom_complet }} ({{ etudiant.numero_etudiant }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="cours" class="form-label">Cours</label>
+                <select class="form-select" id="cours" name="cours">
+                    <option value="">Tous les cours</option>
+                    {% for course in cours %}
+                        <option value="{{ course.id }}" {% if course.id|stringformat:"s" == cours_id %}selected{% endif %}>
+                            {{ course.matiere.nom }} - {{ course.classe.nom }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="type_eval" class="form-label">Type</label>
+                <select class="form-select" id="type_eval" name="type_eval">
+                    <option value="">Tous types</option>
+                    <option value="DS">Devoir Surveillé</option>
+                    <option value="CC">Contrôle Continu</option>
+                    <option value="TP">Travaux Pratiques</option>
+                    <option value="PROJET">Projet</option>
+                    <option value="EXAMEN">Examen Final</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-1"></i>Filtrer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Total Notes</div>
+                    <div class="h3 mb-0 font-weight-bold">{{ notes.paginator.count }}</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="stats-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Moyenne Générale</div>
+                    <div class="h3 mb-0 font-weight-bold">14.2/20</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="stats-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Notes ≥ 10</div>
+                    <div class="h3 mb-0 font-weight-bold">78%</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-thumbs-up"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="stats-card info">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-white-50 small">Cette Semaine</div>
+                    <div class="h3 mb-0 font-weight-bold">24</div>
+                </div>
+                <div class="fa-2x opacity-50">
+                    <i class="fas fa-calendar-week"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des notes -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-list me-2"></i>Notes ({{ notes.paginator.count }} résultats)</span>
+        <div class="btn-group btn-group-sm" role="group">
+            <input type="radio" class="btn-check" name="view" id="table-view" autocomplete="off" checked>
+            <label class="btn btn-outline-secondary" for="table-view"><i class="fas fa-table"></i></label>
+            
+            <input type="radio" class="btn-check" name="view" id="card-view" autocomplete="off">
+            <label class="btn btn-outline-secondary" for="card-view"><i class="fas fa-th"></i></label>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Vue tableau (par défaut) -->
+        <div id="table-container">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Étudiant</th>
+                            <th>Cours</th>
+                            <th>Type</th>
+                            <th>Note</th>
+                            <th>Coefficient</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for note in notes %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if note.etudiant.avatar %}
+                                        <img src="{{ note.etudiant.avatar.url }}" alt="Avatar" class="avatar me-2">
+                                    {% else %}
+                                        <div class="avatar bg-primary text-white d-flex align-items-center justify-content-center me-2">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ note.etudiant.nom_complet }}</strong><br>
+                                        <small class="text-muted">{{ note.etudiant.numero_etudiant }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <strong>{{ note.cours.matiere.nom }}</strong><br>
+                                <small class="text-muted">{{ note.cours.classe.nom }} - {{ note.cours.enseignant.nom_complet }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ note.get_type_evaluation_display }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="h5 mb-0 me-2 {% if note.note >= 10 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ note.note }}/20
+                                    </span>
+                                    <div class="progress" style="width: 60px; height: 8px;">
+                                        <div class="progress-bar {% if note.note >= 10 %}bg-success{% else %}bg-danger{% endif %}" 
+                                             style="width: {% widthratio note.note 20 100 %}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ note.coefficient }}</td>
+                            <td>{{ note.date_evaluation|date:"d/m/Y" }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#noteDetailModal{{ note.id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="{% url 'modifier_note' note.pk %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'supprimer_note' note.pk %}" class="btn btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Vue cartes (cachée par défaut) -->
+        <div id="card-container" style="display: none;">
+            <div class="row">
+                {% for note in notes %}
+                <div class="col-lg-6 col-xl-4 mb-3">
+                    <div class="card h-100 note-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="d-flex align-items-center">
+                                    {% if note.etudiant.avatar %}
+                                        <img src="{{ note.etudiant.avatar.url }}" alt="Avatar" class="avatar me-2">
+                                    {% else %}
+                                        <div class="avatar bg-primary text-white d-flex align-items-center justify-content-center me-2">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="mb-0">{{ note.etudiant.nom_complet }}</h6>
+                                        <small class="text-muted">{{ note.etudiant.numero_etudiant }}</small>
+                                    </div>
+                                </div>
+                                <span class="h4 mb-0 {% if note.note >= 10 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ note.note }}/20
+                                </span>
+                            </div>
+                            
+                            <h6 class="card-title">{{ note.cours.matiere.nom }}</h6>
+                            <p class="card-text">
+                                <small class="text-muted">{{ note.cours.classe.nom }}</small><br>
+                                <span class="badge bg-info">{{ note.get_type_evaluation_display }}</span>
+                                <span class="badge bg-secondary">Coeff. {{ note.coefficient }}</span>
+                            </p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ note.date_evaluation|date:"d/m/Y" }}</small>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="{% url 'modifier_note' note.pk %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'supprimer_note' note.pk %}" class="btn btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if notes.has_other_pages %}
+        <nav aria-label="Navigation pagination">
+            <ul class="pagination justify-content-center">
+                {% if notes.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if etudiant_id %}&etudiant={{ etudiant_id }}{% endif %}{% if cours_id %}&cours={{ cours_id }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ notes.previous_page_number }}{% if etudiant_id %}&etudiant={{ etudiant_id }}{% endif %}{% if cours_id %}&cours={{ cours_id }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in notes.paginator.page_range %}
+                    {% if notes.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > notes.number|add:'-3' and num < notes.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if etudiant_id %}&etudiant={{ etudiant_id }}{% endif %}{% if cours_id %}&cours={{ cours_id }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if notes.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ notes.next_page_number }}{% if etudiant_id %}&etudiant={{ etudiant_id }}{% endif %}{% if cours_id %}&cours={{ cours_id }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ notes.paginator.num_pages }}{% if etudiant_id %}&etudiant={{ etudiant_id }}{% endif %}{% if cours_id %}&cours={{ cours_id }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Ajouter Note -->
+<div class="modal fade" id="addNoteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>Nouvelle Note
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="noteForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="etudiant_select" class="form-label">Étudiant</label>
+                                <select class="form-select" id="etudiant_select" required>
+                                    <option value="">Sélectionner un étudiant</option>
+                                    {% for etudiant in etudiants %}
+                                        <option value="{{ etudiant.id }}">{{ etudiant.nom_complet }} ({{ etudiant.numero_etudiant }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="cours_select" class="form-label">Cours</label>
+                                <select class="form-select" id="cours_select" required>
+                                    <option value="">Sélectionner un cours</option>
+                                    {% for course in cours %}
+                                        <option value="{{ course.id }}">{{ course.matiere.nom }} - {{ course.classe.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="type_evaluation" class="form-label">Type d'évaluation</label>
+                                <select class="form-select" id="type_evaluation" required>
+                                    <option value="">Sélectionner</option>
+                                    <option value="DS">Devoir Surveillé</option>
+                                    <option value="CC">Contrôle Continu</option>
+                                    <option value="TP">Travaux Pratiques</option>
+                                    <option value="PROJET">Projet</option>
+                                    <option value="EXAMEN">Examen Final</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="note_value" class="form-label">Note (/20)</label>
+                                <input type="number" class="form-control" id="note_value" min="0" max="20" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="coefficient" class="form-label">Coefficient</label>
+                                <input type="number" class="form-control" id="coefficient" min="0.1" max="10" step="0.1" value="1.0" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date_evaluation" class="form-label">Date d'évaluation</label>
+                        <input type="date" class="form-control" id="date_evaluation" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="commentaire" class="form-label">Commentaire (optionnel)</label>
+                        <textarea class="form-control" id="commentaire" rows="3" placeholder="Commentaire sur la performance de l'étudiant..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.note-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.note-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+/* Styles pour les notes */
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Basculer entre vue tableau et vue cartes
+document.getElementById('table-view').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('table-container').style.display = 'block';
+        document.getElementById('card-container').style.display = 'none';
+    }
+});
+
+document.getElementById('card-view').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('table-container').style.display = 'none';
+        document.getElementById('card-container').style.display = 'block';
+    }
+});
+
+// Auto-submit pour les filtres
+document.getElementById('etudiant').addEventListener('change', function() {
+    this.form.submit();
+});
+
+document.getElementById('cours').addEventListener('change', function() {
+    this.form.submit();
+});
+
+document.getElementById('type_eval').addEventListener('change', function() {
+    this.form.submit();
+});
+
+// Définir la date d'aujourd'hui par défaut
+document.getElementById('date_evaluation').valueAsDate = new Date();
+
+// Validation de la note
+document.getElementById('note_value').addEventListener('input', function() {
+    const value = parseFloat(this.value);
+    if (value < 0) this.value = 0;
+    if (value > 20) this.value = 20;
+});
+</script>
+{% endblock %}
